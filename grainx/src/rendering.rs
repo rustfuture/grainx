@@ -1,5 +1,5 @@
 use std::io::{self, Write};
-use crossterm::{cursor, execute, style::{self, Color, SetForegroundColor}, terminal};
+use crossterm::{cursor, execute, style::{Color, SetForegroundColor}};
 
 pub struct Rect {
     pub x: u16,

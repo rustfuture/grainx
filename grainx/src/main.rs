@@ -1,21 +1,21 @@
 mod rendering;
 mod analytics;
-mod network;
 mod config;
 
-use sysinfo::{System};
+use sysinfo::{System, Networks};
 use std::{thread, time::Duration, collections::VecDeque};
 use rendering::{AdvancedCanvas, Rect};
-use crossterm::{terminal, execute, cursor, event::{self, Event, KeyCode}, style::{self, Color, SetForegroundColor, ResetColor}};
+use crossterm::{terminal, execute, cursor, event::{self, Event, KeyCode}, style::{Color, ResetColor}};
 use std::io::{self, Write};
 use analytics::{AnomalyDetector, AnomalyDetectorConfig, AnomalyStrategy, TimeSeriesPoint, calculate_correlation, evaluate_metric_formula, predict_next_value};
 use chrono::Utc;
-use network::{start_server, start_agent};
+
 use config::DashboardConfig;
 use std::collections::HashMap;
 
 struct SystemMonitor {
     sys: System,
+    networks: Networks,
     last_cpu_usage: f32,
     high_cpu_duration: u32, // Counter for consecutive high CPU readings
     cpu_state_history: VecDeque<bool>, // true for high CPU, false for low
@@ -27,6 +27,8 @@ impl SystemMonitor {
     fn new() -> Self {
         SystemMonitor {
             sys: System::new_all(),
+            
+            networks: Networks::new_with_refreshed_list(),
             last_cpu_usage: 0.0,
             high_cpu_duration: 0,
             cpu_state_history: VecDeque::with_capacity(5),
@@ -108,6 +110,17 @@ impl SystemMonitor {
         processes.truncate(5); // Top 5 processes
         processes
     }
+
+    fn get_network_io(&mut self) -> (u64, u64) {
+        self.networks.refresh();
+        let mut received_bytes = 0;
+        let mut transmitted_bytes = 0;
+        for (_interface_name, data) in self.networks.list() {
+            received_bytes += data.received();
+            transmitted_bytes += data.transmitted();
+        }
+        (received_bytes, transmitted_bytes)
+    }
 }
 
 #[tokio::main]
@@ -130,21 +143,7 @@ async fn main() -> io::Result<()> {
         }
     };
 
-    // Network features temporarily disabled due to "No such device or address" error.
-    // let server_addr = "127.0.0.1:8080";
-    // tokio::spawn(async move {
-    //     if let Err(e) = start_server(server_addr).await {
-    //         eprintln!("Server error: {}", e);
-    //     }
-    // });
-
-    // // Give the server a moment to start
-    // thread::sleep(Duration::from_secs(2));
-
-    // // Start an agent to send a message
-    // if let Err(e) = start_agent(server_addr, "Hello from agent!").await {
-    //     eprintln!("Agent error: {}", e);
-    // }
+    
 
     let mut monitor = SystemMonitor::new();
     let mut canvas = AdvancedCanvas::new();
@@ -158,7 +157,8 @@ async fn main() -> io::Result<()> {
 
     let cpu_rect = Rect { x: 0, y: 0, width: 80, height: 20 };
     let mem_rect = Rect { x: 0, y: 21, width: 80, height: 10 };
-    let proc_start_y = 32;
+    let network_start_y = 32;
+    let proc_start_y = 35;
 
     let mut current_cpu_y_val = 0.0; // For smooth animation
     let mut current_mem_y_val = 0.0; // For smooth animation
@@ -184,6 +184,7 @@ async fn main() -> io::Result<()> {
         let cpu_usage = monitor.get_cpu_usage();
         let (used_mem, total_mem) = monitor.get_memory_usage();
         let processes = monitor.get_processes();
+        let (received_bytes, transmitted_bytes) = monitor.get_network_io();
 
         // CPU Panel
         canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
@@ -289,6 +290,12 @@ async fn main() -> io::Result<()> {
         for (idx, (name, cpu, mem)) in processes.iter().enumerate() {
             canvas.draw_text_in_rect(&format!("{:<20} {:>5.1}% {:>8}MB", name, cpu, mem / 1024 / 1024), &Rect { x: 0, y: proc_start_y, width: 80, height: 1 }, 1 + idx as u16)?;
         }
+
+        
+
+        // Network I/O Panel
+        canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
+        canvas.draw_text_in_rect(&format!("Network I/O: Received: {} MB, Transmitted: {} MB", received_bytes / 1024 / 1024, transmitted_bytes / 1024 / 1024), &Rect { x: 0, y: network_start_y, width: 80, height: 1 }, 0)?;
 
         io::stdout().flush()?;
 
