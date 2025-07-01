@@ -1,0 +1,8 @@
+{
+  "name": "default",
+  "layout": [
+    "cpu_graph",
+    "memory_usage"
+  ],
+  "refresh_interval_ms": 1000
+}
