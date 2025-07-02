@@ -13,6 +13,189 @@ use chrono::Utc;
 use config::DashboardConfig;
 use std::collections::HashMap;
 
+fn handle_input(selected_process: &mut usize, processes: &Vec<(u32, String, f32, u64)>, monitor: &mut SystemMonitor, canvas: &mut AdvancedCanvas, proc_start_y: u16) -> io::Result<bool> {
+    if event::poll(Duration::from_millis(100))? {
+        if let Event::Key(key_event) = event::read()? {
+            match key_event.code {
+                KeyCode::Char('q') => return Ok(false),
+                KeyCode::Up => {
+                    if *selected_process > 0 {
+                        *selected_process -= 1;
+                    }
+                }
+                KeyCode::Down => {
+                    if *selected_process < processes.len() - 1 {
+                        *selected_process += 1;
+                    }
+                }
+                KeyCode::Char('k') => {
+                    let (pid, name, ..) = &processes[*selected_process];
+                    canvas.set_color(Color::Rgb { r: 255, g: 0, b: 0 })?;
+                    canvas.draw_text_in_rect(&format!("Kill process {} ({})? (y/n)", name, pid), &Rect { x: 0, y: proc_start_y + 7, width: 80, height: 1 }, 0)?;
+                    io::stdout().flush()?;
+                    if let Event::Key(key_event) = event::read()? {
+                        if key_event.code == KeyCode::Char('y') {
+                            monitor.kill_process(*pid);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(true)
+}
+
+
+
+fn draw_dashboard(
+    canvas: &mut AdvancedCanvas, 
+    monitor: &mut SystemMonitor, 
+    processes: &Vec<(u32, String, f32, u64)>, 
+    cpu_points: &mut Vec<(f64, f64)>, 
+    mem_points: &mut Vec<(f64, f64)>, 
+    cpu_history: &mut Vec<f64>,
+    dummy_metric_history: &mut Vec<f64>,
+    iteration_count: &mut i32,
+    selected_process: usize,
+    dashboard_config: &DashboardConfig,
+    anomaly_detector: &AnomalyDetector,
+    cpu_rect: &Rect,
+    mem_rect: &Rect,
+    network_start_y: u16,
+    proc_start_y: u16,
+    current_cpu_y_val: &mut f64,
+    current_mem_y_val: &mut f64
+) -> io::Result<()> {
+    execute!(io::stdout(), terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0,0))?;
+
+    let cpu_usage = monitor.get_cpu_usage();
+    let (used_mem, total_mem) = monitor.get_memory_usage();
+    let (received_bytes, transmitted_bytes) = monitor.get_network_io();
+
+    // CPU Panel
+    canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
+    canvas.draw_text_in_rect(&format!("CPU Usage: {:.2}%", cpu_usage), &cpu_rect, 0)?;
+
+    let current_point = TimeSeriesPoint {
+        timestamp: Utc::now(),
+        value: cpu_usage as f64,
+    };
+
+    if let Some(anomaly) = anomaly_detector.detect_statistical_anomaly(&current_point).await {
+        canvas.set_color(Color::Rgb { r: 255, g: 0, b: 0 })?;
+        canvas.draw_text_in_rect(&format!("ANOMALY DETECTED: {}", anomaly.message), &cpu_rect, 1)?;
+    }
+
+    // Store historical data for correlation and prediction
+    cpu_history.push(cpu_usage as f64);
+    dummy_metric_history.push((cpu_usage as f64 * 0.5) + (*iteration_count as f64 * 0.1));
+
+    // Calculate correlation every 10 iterations
+    if *iteration_count % 10 == 0 && cpu_history.len() > 1 {
+        if let Some(correlation) = calculate_correlation(&cpu_history, &dummy_metric_history) {
+            canvas.set_color(Color::Rgb { r: 255, g: 0, b: 255 })?;
+            canvas.draw_text_in_rect(&format!("Correlation (CPU vs Dummy): {:.2}", correlation), &cpu_rect, 2)?;
+        }
+    }
+
+    // Predict next CPU usage
+    if let Some(predicted_cpu) = predict_next_value(&cpu_history, 5) { // Predict using last 5 values
+        canvas.set_color(Color::Rgb { r: 0, g: 0, b: 255 })?;
+        canvas.draw_text_in_rect(&format!("Predicted Next CPU Usage: {:.2}%", predicted_cpu), &cpu_rect, 3)?;
+    }
+
+    // Evaluate custom metric formula
+    let mut metrics = HashMap::new();
+    metrics.insert("cpu_usage", cpu_usage as f64);
+    let custom_formula = "cpu_usage * 1.5 + 5.0";
+    if let Some(custom_metric_value) = evaluate_metric_formula(custom_formula, &metrics) {
+        canvas.set_color(Color::Rgb { r: 255, g: 255, b: 0 })?;
+        canvas.draw_text_in_rect(&format!("Custom Metric ({}) : {:.2}", custom_formula, custom_metric_value), &cpu_rect, 4)?;
+    }
+
+    // Normalize CPU usage to fit within the rect height
+    let target_cpu_y_val = (cpu_usage as f64 / 100.0) * cpu_rect.height as f64;
+    
+    // Smoothly interpolate towards the target_cpu_y_val
+    *current_cpu_y_val = *current_cpu_y_val * 0.8 + target_cpu_y_val * 0.2; // Simple linear interpolation
+
+    cpu_points.push((*iteration_count as f64, *current_cpu_y_val));
+
+    // Keep only the last `cpu_rect.width` points for scrolling effect
+    if cpu_points.len() > cpu_rect.width as usize {
+        cpu_points.remove(0);
+        // Adjust x coordinates for scrolling
+        for p in cpu_points.iter_mut() {
+            p.0 -= 1.0;
+        }
+    }
+
+    // Set color based on CPU usage for the graph
+    let graph_color = if cpu_usage > 80.0 {
+        Color::Rgb { r: 255, g: 0, b: 0 }
+    } else if cpu_usage > 50.0 {
+        Color::Rgb { r: 255, g: 255, b: 0 }
+    } else {
+        Color::Rgb { r: 0, g: 255, b: 0 }
+    };
+    canvas.set_color(graph_color)?;
+
+    canvas.set_cursor(cpu_rect.x, cpu_rect.y + 5)?;
+    canvas.draw_braille_line(&cpu_points, &cpu_rect)?;
+
+    // Memory Panel
+    let mem_percentage = (used_mem as f64 / total_mem as f64) * 100.0;
+    canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
+    canvas.draw_text_in_rect(&format!("Memory: {}MB / {}MB ({:.2}%)", used_mem / 1024 / 1024, total_mem / 1024 / 1024, mem_percentage), &mem_rect, 0)?;
+
+    let target_mem_y_val = (mem_percentage / 100.0) * mem_rect.height as f64;
+    *current_mem_y_val = *current_mem_y_val * 0.8 + target_mem_y_val * 0.2;
+
+    mem_points.push((*iteration_count as f64, *current_mem_y_val));
+    if mem_points.len() > mem_rect.width as usize {
+        mem_points.remove(0);
+        for p in mem_points.iter_mut() {
+            p.0 -= 1.0;
+        }
+    }
+
+    let mem_graph_color = if mem_percentage > 80.0 {
+        Color::Rgb { r: 255, g: 0, b: 0 }
+    } else if mem_percentage > 50.0 {
+        Color::Rgb { r: 255, g: 255, b: 0 }
+    } else {
+        Color::Rgb { r: 0, g: 255, b: 0 }
+    };
+    canvas.set_color(mem_graph_color)?;
+    canvas.set_cursor(mem_rect.x, mem_rect.y + 1)?;
+    canvas.draw_braille_line(&mem_points, &mem_rect)?;
+
+    // Processes Panel
+    canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
+    canvas.draw_text_in_rect("Top 5 Processes (PID | CPU % | Mem MB):", &Rect { x: 0, y: proc_start_y, width: 80, height: 1 }, 0)?;
+    for (idx, (pid, name, cpu, mem)) in processes.iter().enumerate() {
+        let text = format!("{:<5} {:<20} {:>5.1}% {:>8}MB", pid, name, cpu, mem / 1024 / 1024);
+        if idx == selected_process {
+            canvas.set_color(Color::Rgb { r: 255, g: 255, b: 0 })?;
+            canvas.draw_text_in_rect(&text, &Rect { x: 0, y: proc_start_y, width: 80, height: 1 }, 1 + idx as u16)?;
+            canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
+        } else {
+            canvas.draw_text_in_rect(&text, &Rect { x: 0, y: proc_start_y, width: 80, height: 1 }, 1 + idx as u16)?;
+        }
+    }
+
+    // Network I/O Panel
+    canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
+    canvas.draw_text_in_rect(&format!("Network I/O: Received: {} MB, Transmitted: {} MB", received_bytes / 1024 / 1024, transmitted_bytes / 1024 / 1024), &Rect { x: 0, y: network_start_y, width: 80, height: 1 }, 0)?;
+
+    io::stdout().flush()?;
+
+    *iteration_count += 1;
+
+    Ok(())
+}
+
 struct SystemMonitor {
     sys: System,
     networks: Networks,
@@ -101,14 +284,19 @@ impl SystemMonitor {
         (self.sys.used_memory(), self.sys.total_memory())
     }
 
-    fn get_processes(&mut self) -> Vec<(String, f32, u64)> {
+    fn get_processes(&mut self) -> Vec<(u32, String, f32, u64)> {
         self.sys.refresh_processes();
-        let mut processes: Vec<(String, f32, u64)> = self.sys.processes().values()
-            .map(|p| (p.name().to_string(), p.cpu_usage(), p.memory()))
+        let mut processes: Vec<(u32, String, f32, u64)> = self.sys.processes()
+            .iter()
+            .map(|(pid, p)| (*pid, p.name().to_string(), p.cpu_usage(), p.memory()))
             .collect();
-        processes.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        processes.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
         processes.truncate(5); // Top 5 processes
         processes
+    }
+
+    fn kill_process(&mut self, pid: u32) -> bool {
+        self.sys.process(pid).map_or(false, |p| p.kill())
     }
 
     fn get_network_io(&mut self) -> (u64, u64) {
@@ -121,6 +309,39 @@ impl SystemMonitor {
         }
         (received_bytes, transmitted_bytes)
     }
+}
+
+fn handle_input(selected_process: &mut usize, processes: &Vec<(u32, String, f32, u64)>, monitor: &mut SystemMonitor, canvas: &mut AdvancedCanvas, proc_start_y: u16) -> io::Result<bool> {
+    if event::poll(Duration::from_millis(100))? {
+        if let Event::Key(key_event) = event::read()? {
+            match key_event.code {
+                KeyCode::Char('q') => return Ok(false),
+                KeyCode::Up => {
+                    if *selected_process > 0 {
+                        *selected_process -= 1;
+                    }
+                }
+                KeyCode::Down => {
+                    if *selected_process < processes.len() - 1 {
+                        *selected_process += 1;
+                    }
+                }
+                KeyCode::Char('k') => {
+                    let (pid, name, ..) = &processes[*selected_process];
+                    canvas.set_color(Color::Rgb { r: 255, g: 0, b: 0 })?;
+                    canvas.draw_text_in_rect(&format!("Kill process {} ({})? (y/n)", name, pid), &Rect { x: 0, y: proc_start_y + 7, width: 80, height: 1 }, 0)?;
+                    io::stdout().flush()?;
+                    if let Event::Key(key_event) = event::read()? {
+                        if key_event.code == KeyCode::Char('y') {
+                            monitor.kill_process(*pid);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(true)
 }
 
 #[tokio::main]
@@ -167,139 +388,36 @@ async fn main() -> io::Result<()> {
     let mut dummy_metric_history: Vec<f64> = Vec::new();
 
     let mut iteration_count = 0;
+    let mut selected_process = 0;
 
     loop {
-        // Handle events (e.g., keyboard input)
-        if event::poll(Duration::from_millis(dashboard_config.refresh_interval_ms / 2))? {
-            if let Event::Key(key_event) = event::read()? {
-                if key_event.code == KeyCode::Char('q') {
-                    break; // Exit on 'q'
-                }
-            }
-        }
-
-        // Clear the entire screen for a fresh redraw
-        execute!(io::stdout(), terminal::Clear(terminal::ClearType::All), cursor::MoveTo(0,0))?;
-
-        let cpu_usage = monitor.get_cpu_usage();
-        let (used_mem, total_mem) = monitor.get_memory_usage();
         let processes = monitor.get_processes();
-        let (received_bytes, transmitted_bytes) = monitor.get_network_io();
 
-        // CPU Panel
-        canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
-        canvas.draw_text_in_rect(&format!("CPU Usage: {:.2}%", cpu_usage), &cpu_rect, 0)?;
-
-        let current_point = TimeSeriesPoint {
-            timestamp: Utc::now(),
-            value: cpu_usage as f64,
-        };
-
-        if let Some(anomaly) = anomaly_detector.detect_statistical_anomaly(&current_point).await {
-            canvas.set_color(Color::Rgb { r: 255, g: 0, b: 0 })?;
-            canvas.draw_text_in_rect(&format!("ANOMALY DETECTED: {}", anomaly.message), &cpu_rect, 1)?;
+        if !handle_input(&mut selected_process, &processes, &mut monitor, &mut canvas, proc_start_y)? {
+            break;
         }
 
-        // Store historical data for correlation and prediction
-        cpu_history.push(cpu_usage as f64);
-        dummy_metric_history.push((cpu_usage as f64 * 0.5) + (iteration_count as f64 * 0.1));
+        draw_dashboard(
+            &mut canvas, 
+            &mut monitor, 
+            &processes, 
+            &mut cpu_points, 
+            &mut mem_points, 
+            &mut cpu_history, 
+            &mut dummy_metric_history, 
+            &mut iteration_count, 
+            selected_process, 
+            &dashboard_config, 
+            &anomaly_detector, 
+            &cpu_rect, 
+            &mem_rect, 
+            network_start_y, 
+            proc_start_y, 
+            &mut current_cpu_y_val, 
+            &mut current_mem_y_val
+        ).await?;
 
-        // Calculate correlation every 10 iterations
-        if iteration_count % 10 == 0 && cpu_history.len() > 1 {
-            if let Some(correlation) = calculate_correlation(&cpu_history, &dummy_metric_history) {
-                canvas.set_color(Color::Rgb { r: 255, g: 0, b: 255 })?;
-                canvas.draw_text_in_rect(&format!("Correlation (CPU vs Dummy): {:.2}", correlation), &cpu_rect, 2)?;
-            }
-        }
-
-        // Predict next CPU usage
-        if let Some(predicted_cpu) = predict_next_value(&cpu_history, 5) { // Predict using last 5 values
-            canvas.set_color(Color::Rgb { r: 0, g: 0, b: 255 })?;
-            canvas.draw_text_in_rect(&format!("Predicted Next CPU Usage: {:.2}%", predicted_cpu), &cpu_rect, 3)?;
-        }
-
-        // Evaluate custom metric formula
-        let mut metrics = HashMap::new();
-        metrics.insert("cpu_usage", cpu_usage as f64);
-        let custom_formula = "cpu_usage * 1.5 + 5.0";
-        if let Some(custom_metric_value) = evaluate_metric_formula(custom_formula, &metrics) {
-            canvas.set_color(Color::Rgb { r: 255, g: 255, b: 0 })?;
-            canvas.draw_text_in_rect(&format!("Custom Metric ({}) : {:.2}", custom_formula, custom_metric_value), &cpu_rect, 4)?;
-        }
-
-        // Normalize CPU usage to fit within the rect height
-        let target_cpu_y_val = (cpu_usage as f64 / 100.0) * cpu_rect.height as f64;
-        
-        // Smoothly interpolate towards the target_cpu_y_val
-        current_cpu_y_val = current_cpu_y_val * 0.8 + target_cpu_y_val * 0.2; // Simple linear interpolation
-
-        cpu_points.push((iteration_count as f64, current_cpu_y_val));
-
-        // Keep only the last `cpu_rect.width` points for scrolling effect
-        if cpu_points.len() > cpu_rect.width as usize {
-            cpu_points.remove(0);
-            // Adjust x coordinates for scrolling
-            for p in cpu_points.iter_mut() {
-                p.0 -= 1.0;
-            }
-        }
-
-        // Set color based on CPU usage for the graph
-        let graph_color = if cpu_usage > 80.0 {
-            Color::Rgb { r: 255, g: 0, b: 0 }
-        } else if cpu_usage > 50.0 {
-            Color::Rgb { r: 255, g: 255, b: 0 }
-        } else {
-            Color::Rgb { r: 0, g: 255, b: 0 }
-        };
-        canvas.set_color(graph_color)?;
-
-        canvas.set_cursor(cpu_rect.x, cpu_rect.y + 5)?;
-        canvas.draw_braille_line(&cpu_points, &cpu_rect)?;
-
-        // Memory Panel
-        let mem_percentage = (used_mem as f64 / total_mem as f64) * 100.0;
-        canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
-        canvas.draw_text_in_rect(&format!("Memory: {}MB / {}MB ({:.2}%)", used_mem / 1024 / 1024, total_mem / 1024 / 1024, mem_percentage), &mem_rect, 0)?;
-
-        let target_mem_y_val = (mem_percentage / 100.0) * mem_rect.height as f64;
-        current_mem_y_val = current_mem_y_val * 0.8 + target_mem_y_val * 0.2;
-
-        mem_points.push((iteration_count as f64, current_mem_y_val));
-        if mem_points.len() > mem_rect.width as usize {
-            mem_points.remove(0);
-            for p in mem_points.iter_mut() {
-                p.0 -= 1.0;
-            }
-        }
-
-        let mem_graph_color = if mem_percentage > 80.0 {
-            Color::Rgb { r: 255, g: 0, b: 0 }
-        } else if mem_percentage > 50.0 {
-            Color::Rgb { r: 255, g: 255, b: 0 }
-        } else {
-            Color::Rgb { r: 0, g: 255, b: 0 }
-        };
-        canvas.set_color(mem_graph_color)?;
-        canvas.set_cursor(mem_rect.x, mem_rect.y + 1)?;
-        canvas.draw_braille_line(&mem_points, &mem_rect)?;
-
-        // Processes Panel
-        canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
-        canvas.draw_text_in_rect("Top 5 Processes (CPU % | Mem MB):", &Rect { x: 0, y: proc_start_y, width: 80, height: 1 }, 0)?;
-        for (idx, (name, cpu, mem)) in processes.iter().enumerate() {
-            canvas.draw_text_in_rect(&format!("{:<20} {:>5.1}% {:>8}MB", name, cpu, mem / 1024 / 1024), &Rect { x: 0, y: proc_start_y, width: 80, height: 1 }, 1 + idx as u16)?;
-        }
-
-        
-
-        // Network I/O Panel
-        canvas.set_color(Color::Rgb { r: 0, g: 255, b: 255 })?;
-        canvas.draw_text_in_rect(&format!("Network I/O: Received: {} MB, Transmitted: {} MB", received_bytes / 1024 / 1024, transmitted_bytes / 1024 / 1024), &Rect { x: 0, y: network_start_y, width: 80, height: 1 }, 0)?;
-
-        io::stdout().flush()?;
-
-        iteration_count += 1;
+        thread::sleep(Duration::from_millis(dashboard_config.refresh_interval_ms));
     }
 
     terminal::disable_raw_mode()?;
