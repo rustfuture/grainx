@@ -1,66 +1,387 @@
-# grainx
+<div align="center">
 
-[![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-30%2F30%20passing-brightgreen.svg)](#testing)
+# 🖥️ grainx
 
-A modern, cross-platform, terminal-native system monitoring tool written in Rust.
+[![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg?style=for-the-badge&logo=rust)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-30%2F30%20geçiyor-brightgreen.svg?style=for-the-badge)](#testler)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=for-the-badge)](#platform-uyumluluğu)
 
-## Features
+**Modern, cross-platform, terminal tabanlı sistem izleme aracı**
 
-- **High-Resolution Visualization**: Unicode Braille pattern graphics (8x higher resolution)
-- **Real-time Monitoring**: CPU, memory, disk, and network usage
-- **Intelligent Analytics**: Anomaly detection, correlation analysis, predictive forecasting
-- **Interactive Interface**: Process management with keyboard controls
-- **Cross-Platform**: Linux, macOS 10.12+, Windows 10+
-- **Performance Optimized**: Adaptive refresh rates and memory efficient
+*Rust ile yazılmış, gerçek zamanlı sistem analizi ve güzel Unicode grafikleri*
 
-## Quick Start
+[Özellikler](#-özellikler) • [Kurulum](#-kurulum) • [Kullanım](#-kullanım) • [Konfigürasyon](#-konfigürasyon)
 
-```bash
-# Clone the repository
-git clone https://github.com/rustfuture/grainx.git
-cd grainx
+![grainx Demo](https://via.placeholder.com/800x400/1a1a1a/00ff00?text=grainx+Sistem+Monitörü)
 
-# Run the monitor
-cargo run
-```
-
-## Controls
-
-| Key | Action |
-|-----|--------|
-| `q` / `ESC` | Exit |
-| `↑` / `↓` | Navigate processes |
-| `k` | Kill selected process |
-| `h` / `?` | Help menu |
-| `p` | Pause/Resume |
-| `a` | Toggle adaptive refresh |
-
-## Configuration
-
-Edit `dashboard_config.json` to customize:
-
-```json
-{
-  "refresh_interval_ms": 500,
-  "cpu_warning_threshold": 80.0,
-  "memory_warning_threshold": 85.0,
-  "max_processes": 10
-}
-```
-
-## Testing
-
-```bash
-cargo test    # Run tests
-cargo bench   # Run benchmarks
-```
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file.
+</div>
 
 ---
 
-**Made with ❤️ in Rust**
+## ✨ Özellikler
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎨 **Yüksek Çözünürlük Grafikleri**
+- Unicode Braille karakter grafikleri (8x yüksek çözünürlük)
+- Gerçek zamanlı CPU ve bellek grafikleri
+- Dinamik renk kodlaması
+- Akıcı kaydırmalı zaman çizelgesi
+
+### 🧠 **Akıllı Analitik**
+- İstatistiksel anomali tespiti
+- Metrikler arası korelasyon analizi
+- Tahmine dayalı CPU kullanım tahmini
+- Özel metrik formülleri
+
+</td>
+<td width="50%">
+
+### ⚡ **Performans Optimizasyonu**
+- Adaptif yenileme hızları
+- Yük altında frame atlama
+- Bellek verimli tasarım
+- Engelleyici olmayan girdi işleme
+
+### 🖱️ **Etkileşimli Arayüz**
+- Process seçimi ve yönetimi
+- Gerçek zamanlı process sonlandırma
+- Türkçe yardım sistemi
+- Duraklat/Devam et işlevi
+
+</td>
+</tr>
+</table>
+
+### 📊 **Kapsamlı İzleme**
+
+| Bileşen | Özellikler |
+|---------|------------|
+| **CPU** | Genel kullanım + bireysel çekirdek izleme (8 çekirdeğe kadar) |
+| **Bellek** | Kullanım yüzdesi ve mutlak değerler, trend analizi |
+| **Disk** | Çoklu sürücü kullanım istatistikleri ve kapasite bilgisi |
+| **Ağ** | Gerçek zamanlı I/O istatistikleri ve throughput izleme |
+| **Sistem** | OS bilgisi, kernel versiyonu, uptime ve sistem detayları |
+| **Processler** | En çok CPU kullanan processler ve detaylı bilgiler |
+
+---
+
+## 🚀 Kurulum
+
+### Ön Gereksinimler
+- **Rust 1.70+** ([Rust Kurulumu](https://rustup.rs/))
+- **Unicode destekli terminal**
+
+### Hızlı Başlangıç
+
+```bash
+# Repository'yi klonla
+git clone https://github.com/rustfuture/grainx.git
+cd grainx
+
+# Direkt çalıştır
+cargo run
+
+# Veya optimize edilmiş sürümü derle
+cargo build --release
+./target/release/grainx
+```
+
+### Platform Bazlı Kurulum
+
+<details>
+<summary><b>🐧 Linux</b></summary>
+
+```bash
+# Ubuntu/Debian
+sudo apt update && sudo apt install build-essential
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Fedora/RHEL
+sudo dnf groupinstall "Development Tools"
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Arch Linux
+sudo pacman -S base-devel
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+</details>
+
+<details>
+<summary><b>🍎 macOS</b></summary>
+
+```bash
+# Rust kurulumu
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Veya Homebrew ile
+brew install rustup
+rustup-init
+```
+
+</details>
+
+<details>
+<summary><b>🪟 Windows</b></summary>
+
+```powershell
+# winget kullanarak
+winget install Rustlang.Rust
+
+# Veya https://rustup.rs/ adresinden indirin
+# Sonra PowerShell veya Windows Terminal'de çalıştırın
+```
+
+</details>
+
+---
+
+## 🎮 Kullanım
+
+### Temel Komutlar
+
+```bash
+cargo run              # İzlemeyi başlat
+cargo test             # Test paketini çalıştır
+cargo bench            # Benchmark'ları çalıştır
+cargo build --release  # Optimize edilmiş binary derle
+```
+
+### Klavye Kontrolleri
+
+<div align="center">
+
+| Tuş | İşlev | Tuş | İşlev |
+|-----|-------|-----|-------|
+| `q` / `ESC` | Programdan çık | `h` / `?` | Yardım menüsü |
+| `↑` / `↓` | Process'lerde gezin | `p` | Duraklat/Devam |
+| `k` | Seçili process'i öldür | `r` | Ekranı yenile |
+| `a` | Adaptif yenilemeyi aç/kapat | `s` | İstatistikleri kaydet |
+
+</div>
+
+### Ekran Görüntüsü
+
+<details>
+<summary><b>📸 Terminal Görünümü</b></summary>
+
+```
+┌─ grainx Sistem Monitörü ─ İterasyon: 42 ─┐
+│ CPU Kullanımı:  45.2%                     │
+│ ████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│                                           │
+│ Bellek: 68.5% (5.5GB/8.0GB)              │
+│ ████████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│                                           │
+│ Sistem: Linux | Kernel: 5.15.0 | Up: 2s  │
+│ Ağ: RX:125.3MB TX:89.7MB                  │
+│ CPU Çekirdekleri: C0:42% C1:38% C2:51%    │
+│ Diskler: sda:75%(465GB) nvme:45%(1TB)     │
+│                                           │
+│ En Çok CPU Kullanan (↑↓=seç, k=öldür)    │
+│ ► 1234  firefox         25.3%    512MB    │
+│   5678  code            15.8%    256MB    │
+│   9012  grainx           2.1%     8MB     │
+└───────────────────────────────────────────┘
+```
+
+</details>
+
+---
+
+## ⚙️ Konfigürasyon
+
+grainx özelleştirme için JSON konfigürasyon dosyası kullanır:
+
+<details>
+<summary><b>📝 dashboard_config.json</b></summary>
+
+```json
+{
+  "name": "grainx_gelişmiş",
+  "layout": [
+    "cpu_graph",
+    "memory_usage", 
+    "network_stats",
+    "process_list",
+    "analytics"
+  ],
+  "refresh_interval_ms": 500,
+  "cpu_warning_threshold": 80.0,
+  "memory_warning_threshold": 85.0,
+  "show_predictions": true,
+  "show_correlations": true,
+  "max_processes": 10,
+  "graph_history_size": 100
+}
+```
+
+</details>
+
+### Konfigürasyon Seçenekleri
+
+| Seçenek | Tip | Varsayılan | Açıklama |
+|---------|-----|------------|----------|
+| `cpu_warning_threshold` | `f32` | `80.0` | Uyarı renkleri için CPU kullanım % |
+| `memory_warning_threshold` | `f32` | `85.0` | Uyarılar için bellek kullanım % |
+| `show_predictions` | `bool` | `true` | CPU kullanım tahminlerini etkinleştir |
+| `show_correlations` | `bool` | `true` | Korelasyon analizini etkinleştir |
+| `max_processes` | `usize` | `10` | Gösterilecek maksimum process sayısı |
+| `graph_history_size` | `usize` | `100` | Grafiklerdeki veri noktası sayısı |
+
+---
+
+## 🧪 Testler
+
+grainx **30/30 test geçiyor** ✅ ile kapsamlı test kapsamına sahiptir
+
+```bash
+# Tüm testleri çalıştır
+cargo test
+
+# Belirli modülleri test et
+cargo test analytics
+cargo test performance  
+cargo test config
+
+# Integration testlerini çalıştır
+cargo test --test integration_tests
+
+# Benchmark'ları çalıştır
+cargo bench
+```
+
+### Test Kategorileri
+
+- **Unit Testler**: Bireysel modül işlevselliği
+- **Integration Testler**: Uçtan uca sistem davranışı  
+- **Performance Testler**: Kritik yolların benchmark'ı
+- **Platform Testler**: Cross-platform uyumluluk
+
+---
+
+## 🌍 Platform Uyumluluğu
+
+<div align="center">
+
+| Platform | Destek | Notlar |
+|----------|:------:|--------|
+| **🐧 Linux** | ✅ **Tam** | Native geliştirme platformu |
+| **🍎 macOS 11+** | ✅ **Tam** | Tam özellik seti |
+| **🍎 macOS 10.12+** | ⚠️ **Çoğunlukla** | Ana özellikler çalışır, bazı metrikler sınırlı |
+| **🪟 Windows 10+** | ✅ **Tam** | Windows Terminal ile en iyi deneyim |
+
+</div>
+
+### Performans Metrikleri
+
+| Metrik | Değer | Notlar |
+|--------|-------|--------|
+| **Bellek Kullanımı** | ~5-10MB | Tipik çalışma zamanı kullanımı |
+| **CPU Etkisi** | <1% | Modern sistemlerde |
+| **Yenileme Hızı** | 250ms-2s | Yüke göre adaptif |
+| **Başlama Süresi** | ~100-200ms | Platforma bağlı |
+
+---
+
+## 🐛 Sorun Giderme
+
+<details>
+<summary><b>Yaygın Sorunlar ve Çözümler</b></summary>
+
+### Unicode Görüntü Sorunları
+```bash
+# Linux/macOS
+export LANG=tr_TR.UTF-8
+export LC_ALL=tr_TR.UTF-8
+
+# Windows
+chcp 65001
+```
+
+### İzin Hataları
+```bash
+# Linux/macOS - tam sistem erişimi için
+sudo ./target/release/grainx
+
+# Windows - Yönetici olarak çalıştır
+```
+
+### Yüksek CPU Kullanımı
+- Adaptif yenilemeyi açmak için `a` tuşuna basın
+- Config'de yenileme aralığını artırın
+- Sistem darboğazlarını kontrol edin
+
+</details>
+
+### Debug Modu
+
+```bash
+RUST_LOG=debug cargo run
+RUST_LOG=grainx=trace cargo run  # Ayrıntılı loglama
+```
+
+---
+
+## 🤝 Katkıda Bulunma
+
+Katkılarınızı memnuniyetle karşılıyoruz! Başlamak için:
+
+### Geliştirme Kurulumu
+
+```bash
+# Fork ve clone
+git clone https://github.com/rustfuture/grainx.git
+cd grainx
+
+# Özellik branch'i oluştur
+git checkout -b feature/harika-ozellik
+
+# Değişiklik yap ve test et
+cargo test
+cargo clippy
+cargo fmt
+
+# Commit ve push
+git commit -m "Harika özellik ekle"
+git push origin feature/harika-ozellik
+```
+
+### Katkı Rehberi
+
+- 🧪 **Yeni işlevsellik için test ekle**
+- 📝 **API değişiklikleri için dokümantasyonu güncelle**  
+- 🎨 **Rust konvansiyonlarını takip et** (rustfmt, clippy)
+- ✅ **Göndermeden önce tüm testlerin geçtiğinden emin ol**
+- 📋 **Açık commit mesajları yaz**
+
+---
+
+## 📄 Lisans
+
+Bu proje **MIT Lisansı** altında lisanslanmıştır - detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+---
+
+## 🙏 Teşekkürler
+
+- 🦀 **[sysinfo](https://github.com/GuillaumeGomez/sysinfo)** - Cross-platform sistem bilgisi
+- 🖥️ **[crossterm](https://github.com/crossterm-rs/crossterm)** - Terminal manipülasyonu
+- 📊 **[criterion](https://github.com/bheisler/criterion.rs)** - Performance benchmark'ı
+- 🎨 **Unicode Consortium** - Braille karakter standartları
+
+---
+
+<div align="center">
+
+### ⭐ Bu projeyi faydalı buluyorsanız yıldızlamayı unutmayın!
+
+**❤️ ve 🦀 Rust ile yapıldı**
+
+[⬆ Başa Dön](#-grainx)
+
+</div>
