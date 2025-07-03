@@ -1,0 +1,17 @@
+{
+  "name": "grainx_advanced",
+  "layout": [
+    "cpu_graph",
+    "memory_usage",
+    "network_stats",
+    "process_list",
+    "analytics"
+  ],
+  "refresh_interval_ms": 500,
+  "cpu_warning_threshold": 80.0,
+  "memory_warning_threshold": 85.0,
+  "show_predictions": true,
+  "show_correlations": true,
+  "max_processes": 10,
+  "graph_history_size": 100
+}
