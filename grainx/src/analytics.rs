@@ -18,6 +18,7 @@ pub struct TimeSeriesPoint<T> {
     pub value: T,
 }
 
+#[allow(dead_code)]
 pub struct Anomaly<T> {
     pub timestamp: DateTime<Utc>,
     pub value: T,
@@ -25,17 +26,21 @@ pub struct Anomaly<T> {
     pub message: String,
 }
 
+#[allow(dead_code)]
 /// Anomaly detector for numerical time-series data
 pub struct AnomalyDetector {
     /// Configuration
     pub config: AnomalyDetectorConfig,
     
     /// Detection strategy
+    /// Detection strategy
     pub strategy: AnomalyStrategy,
     
     /// Historical data
+    /// Historical data
     pub history: Arc<RwLock<VecDeque<TimeSeriesPoint<f64>>>>,
     
+    /// Detected anomalies
     /// Detected anomalies
     pub anomalies: Arc<RwLock<Vec<Anomaly<f64>>>>,
     
@@ -94,7 +99,7 @@ impl AnomalyDetector {
     }
 
     // Placeholder for training the model
-    pub async fn train_model(&self) {
+    pub async fn _train_model(&self) {
         // Implement model training here
         *self.last_train_time.write() = Some(Utc::now());
     }
@@ -163,4 +168,49 @@ pub fn predict_next_value(history: &[f64], window_size: usize) -> Option<f64> {
     }
     let sum: f64 = history[history.len() - window_size..].iter().sum();
     Some(sum / window_size as f64)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_correlation_perfect_positive() {
+        let data1 = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let data2 = vec![2.0, 4.0, 6.0, 8.0, 10.0];
+        let correlation = calculate_correlation(&data1, &data2).unwrap();
+        assert!((correlation - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_correlation_no_correlation() {
+        let data1 = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let data2 = vec![5.0, 2.0, 8.0, 1.0, 6.0];
+        let correlation = calculate_correlation(&data1, &data2);
+        assert!(correlation.is_some());
+    }
+
+    #[test]
+    fn test_prediction_basic() {
+        let history = vec![10.0, 20.0, 30.0];
+        let prediction = predict_next_value(&history, 2).unwrap();
+        assert_eq!(prediction, 25.0); // (20+30)/2
+    }
+
+    #[test]
+    fn test_metric_formula_basic() {
+        let mut metrics = HashMap::new();
+        metrics.insert("cpu_usage", 50.0);
+        let result = evaluate_metric_formula("cpu_usage * 2.0", &metrics).unwrap();
+        assert_eq!(result, 100.0);
+    }
+
+    #[test]
+    fn test_metric_formula_addition() {
+        let mut metrics = HashMap::new();
+        metrics.insert("cpu_usage", 30.0);
+        let result = evaluate_metric_formula("cpu_usage + 20.0", &metrics).unwrap();
+        assert_eq!(result, 50.0);
+    }
 }
