@@ -4,93 +4,93 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg?style=for-the-badge&logo=rust)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-30%2F30%20passing-brightgreen.svg?style=for-the-badge)](#testing)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=for-the-badge)](#platform-compatibility)
+[![Tests](https://img.shields.io/badge/tests-30%2F30%20geçiyor-brightgreen.svg?style=for-the-badge)](#testler)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=for-the-badge)](#platform-uyumluluğu)
 
-**A modern, cross-platform, terminal-native system monitoring tool written in Rust**
+**Modern, cross-platform, terminal tabanlı sistem izleme aracı**
 
-*Real-time system insights with beautiful Unicode graphics and intelligent analytics*
+*Rust ile yazılmış, gerçek zamanlı sistem analizi ve güzel Unicode grafikleri*
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Configuration](#-configuration) • [Contributing](#-contributing)
+[Özellikler](#-özellikler) • [Kurulum](#-kurulum) • [Kullanım](#-kullanım) • [Konfigürasyon](#-konfigürasyon)
 
-![grainx Demo](https://via.placeholder.com/800x400/1a1a1a/00ff00?text=grainx+System+Monitor+Demo)
+![grainx Demo](https://via.placeholder.com/800x400/1a1a1a/00ff00?text=grainx+Sistem+Monitörü)
 
 </div>
 
 ---
 
-## ✨ Features
+## ✨ Özellikler
 
 <table>
 <tr>
 <td width="50%">
 
-### 🎨 **High-Resolution Visualization**
-- Unicode Braille pattern graphics (8x resolution)
-- Real-time CPU and memory graphs
-- Dynamic color coding
-- Smooth scrolling timeline
+### 🎨 **Yüksek Çözünürlük Grafikleri**
+- Unicode Braille karakter grafikleri (8x yüksek çözünürlük)
+- Gerçek zamanlı CPU ve bellek grafikleri
+- Dinamik renk kodlaması
+- Akıcı kaydırmalı zaman çizelgesi
 
-### 🧠 **Intelligent Analytics**
-- Statistical anomaly detection
-- Correlation analysis between metrics
-- Predictive CPU usage forecasting
-- Custom metric formulas
+### 🧠 **Akıllı Analitik**
+- İstatistiksel anomali tespiti
+- Metrikler arası korelasyon analizi
+- Tahmine dayalı CPU kullanım tahmini
+- Özel metrik formülleri
 
 </td>
 <td width="50%">
 
-### ⚡ **Performance Optimized**
-- Adaptive refresh rates
-- Frame skipping under load
-- Memory-efficient design
-- Non-blocking input handling
+### ⚡ **Performans Optimizasyonu**
+- Adaptif yenileme hızları
+- Yük altında frame atlama
+- Bellek verimli tasarım
+- Engelleyici olmayan girdi işleme
 
-### 🖱️ **Interactive Interface**
-- Process selection & management
-- Real-time process termination
-- Turkish language help system
-- Pause/Resume functionality
+### 🖱️ **Etkileşimli Arayüz**
+- Process seçimi ve yönetimi
+- Gerçek zamanlı process sonlandırma
+- Türkçe yardım sistemi
+- Duraklat/Devam et işlevi
 
 </td>
 </tr>
 </table>
 
-### 📊 **Comprehensive Monitoring**
+### 📊 **Kapsamlı İzleme**
 
-| Component | Features |
-|-----------|----------|
-| **CPU** | Overall usage + individual core monitoring (up to 8 cores) |
-| **Memory** | Usage percentage and absolute values with trend analysis |
-| **Disk** | Usage statistics for multiple drives with capacity info |
-| **Network** | Real-time I/O statistics and throughput monitoring |
-| **System** | OS info, kernel version, uptime, and system details |
-| **Processes** | Top CPU-consuming processes with detailed information |
+| Bileşen | Özellikler |
+|---------|------------|
+| **CPU** | Genel kullanım + bireysel çekirdek izleme (8 çekirdeğe kadar) |
+| **Bellek** | Kullanım yüzdesi ve mutlak değerler, trend analizi |
+| **Disk** | Çoklu sürücü kullanım istatistikleri ve kapasite bilgisi |
+| **Ağ** | Gerçek zamanlı I/O istatistikleri ve throughput izleme |
+| **Sistem** | OS bilgisi, kernel versiyonu, uptime ve sistem detayları |
+| **Processler** | En çok CPU kullanan processler ve detaylı bilgiler |
 
 ---
 
-## 🚀 Installation
+## 🚀 Kurulum
 
-### Prerequisites
-- **Rust 1.70+** ([Install Rust](https://rustup.rs/))
-- **Terminal with Unicode support**
+### Ön Gereksinimler
+- **Rust 1.70+** ([Rust Kurulumu](https://rustup.rs/))
+- **Unicode destekli terminal**
 
-### Quick Start
+### Hızlı Başlangıç
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/grainx.git
+# Repository'yi klonla
+git clone https://github.com/rustfuture/grainx.git
 cd grainx
 
-# Run directly
+# Direkt çalıştır
 cargo run
 
-# Or build optimized release
+# Veya optimize edilmiş sürümü derle
 cargo build --release
 ./target/release/grainx
 ```
 
-### Platform-Specific Installation
+### Platform Bazlı Kurulum
 
 <details>
 <summary><b>🐧 Linux</b></summary>
@@ -115,10 +115,10 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 <summary><b>🍎 macOS</b></summary>
 
 ```bash
-# Install Rust
+# Rust kurulumu
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Or using Homebrew
+# Veya Homebrew ile
 brew install rustup
 rustup-init
 ```
@@ -129,80 +129,80 @@ rustup-init
 <summary><b>🪟 Windows</b></summary>
 
 ```powershell
-# Using winget
+# winget kullanarak
 winget install Rustlang.Rust
 
-# Or download from https://rustup.rs/
-# Then run in PowerShell or Windows Terminal
+# Veya https://rustup.rs/ adresinden indirin
+# Sonra PowerShell veya Windows Terminal'de çalıştırın
 ```
 
 </details>
 
 ---
 
-## 🎮 Usage
+## 🎮 Kullanım
 
-### Basic Commands
+### Temel Komutlar
 
 ```bash
-cargo run          # Start monitoring
-cargo test         # Run test suite
-cargo bench        # Run benchmarks
-cargo build --release  # Build optimized binary
+cargo run              # İzlemeyi başlat
+cargo test             # Test paketini çalıştır
+cargo bench            # Benchmark'ları çalıştır
+cargo build --release  # Optimize edilmiş binary derle
 ```
 
-### Keyboard Controls
+### Klavye Kontrolleri
 
 <div align="center">
 
-| Key | Action | Key | Action |
-|-----|--------|-----|--------|
-| `q` / `ESC` | Exit program | `h` / `?` | Show help menu |
-| `↑` / `↓` | Navigate processes | `p` | Pause/Resume |
-| `k` | Kill selected process | `r` | Refresh display |
-| `a` | Toggle adaptive refresh | `s` | Save statistics |
+| Tuş | İşlev | Tuş | İşlev |
+|-----|-------|-----|-------|
+| `q` / `ESC` | Programdan çık | `h` / `?` | Yardım menüsü |
+| `↑` / `↓` | Process'lerde gezin | `p` | Duraklat/Devam |
+| `k` | Seçili process'i öldür | `r` | Ekranı yenile |
+| `a` | Adaptif yenilemeyi aç/kapat | `s` | İstatistikleri kaydet |
 
 </div>
 
-### Screenshots
+### Ekran Görüntüsü
 
 <details>
-<summary><b>📸 View Screenshots</b></summary>
+<summary><b>📸 Terminal Görünümü</b></summary>
 
 ```
-┌─ grainx System Monitor ─ Iteration: 42 ─┐
-│ CPU Usage:  45.2%                        │
-│ ████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
-│                                          │
-│ Memory: 68.5% (5.5GB/8.0GB)             │
-│ ████████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
-│                                          │
-│ System: Linux | Kernel: 5.15.0 | Up: 2h │
-│ Network: RX:125.3MB TX:89.7MB            │
-│ CPU Cores: C0:42% C1:38% C2:51% C3:44%   │
-│ Disks: sda:75%(465GB) nvme:45%(1TB)      │
-│                                          │
-│ Top Processes (↑↓ select, k=kill, q=quit)│
-│ ► 1234  firefox         25.3%    512MB   │
-│   5678  code            15.8%    256MB   │
-│   9012  grainx           2.1%     8MB    │
-└──────────────────────────────────────────┘
+┌─ grainx Sistem Monitörü ─ İterasyon: 42 ─┐
+│ CPU Kullanımı:  45.2%                     │
+│ ████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│                                           │
+│ Bellek: 68.5% (5.5GB/8.0GB)              │
+│ ████████████████████████▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  │
+│                                           │
+│ Sistem: Linux | Kernel: 5.15.0 | Up: 2s  │
+│ Ağ: RX:125.3MB TX:89.7MB                  │
+│ CPU Çekirdekleri: C0:42% C1:38% C2:51%    │
+│ Diskler: sda:75%(465GB) nvme:45%(1TB)     │
+│                                           │
+│ En Çok CPU Kullanan (↑↓=seç, k=öldür)    │
+│ ► 1234  firefox         25.3%    512MB    │
+│   5678  code            15.8%    256MB    │
+│   9012  grainx           2.1%     8MB     │
+└───────────────────────────────────────────┘
 ```
 
 </details>
 
 ---
 
-## ⚙️ Configuration
+## ⚙️ Konfigürasyon
 
-grainx uses a JSON configuration file for customization:
+grainx özelleştirme için JSON konfigürasyon dosyası kullanır:
 
 <details>
 <summary><b>📝 dashboard_config.json</b></summary>
 
 ```json
 {
-  "name": "grainx_advanced",
+  "name": "grainx_gelişmiş",
   "layout": [
     "cpu_graph",
     "memory_usage", 
@@ -222,198 +222,165 @@ grainx uses a JSON configuration file for customization:
 
 </details>
 
-### Configuration Options
+### Konfigürasyon Seçenekleri
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `cpu_warning_threshold` | `f32` | `80.0` | CPU usage % for warning colors |
-| `memory_warning_threshold` | `f32` | `85.0` | Memory usage % for warnings |
-| `show_predictions` | `bool` | `true` | Enable CPU usage predictions |
-| `show_correlations` | `bool` | `true` | Enable correlation analysis |
-| `max_processes` | `usize` | `10` | Max processes to display |
-| `graph_history_size` | `usize` | `100` | Data points in graphs |
+| Seçenek | Tip | Varsayılan | Açıklama |
+|---------|-----|------------|----------|
+| `cpu_warning_threshold` | `f32` | `80.0` | Uyarı renkleri için CPU kullanım % |
+| `memory_warning_threshold` | `f32` | `85.0` | Uyarılar için bellek kullanım % |
+| `show_predictions` | `bool` | `true` | CPU kullanım tahminlerini etkinleştir |
+| `show_correlations` | `bool` | `true` | Korelasyon analizini etkinleştir |
+| `max_processes` | `usize` | `10` | Gösterilecek maksimum process sayısı |
+| `graph_history_size` | `usize` | `100` | Grafiklerdeki veri noktası sayısı |
 
 ---
 
-## 🧪 Testing
+## 🧪 Testler
 
-grainx has comprehensive test coverage with **30/30 tests passing** ✅
+grainx **30/30 test geçiyor** ✅ ile kapsamlı test kapsamına sahiptir
 
 ```bash
-# Run all tests
+# Tüm testleri çalıştır
 cargo test
 
-# Run specific modules
+# Belirli modülleri test et
 cargo test analytics
 cargo test performance  
 cargo test config
 
-# Run integration tests
+# Integration testlerini çalıştır
 cargo test --test integration_tests
 
-# Run benchmarks
+# Benchmark'ları çalıştır
 cargo bench
-
-# Test with coverage
-cargo tarpaulin --out Html
 ```
 
-### Test Categories
+### Test Kategorileri
 
-- **Unit Tests**: Individual module functionality
-- **Integration Tests**: End-to-end system behavior  
-- **Performance Tests**: Benchmark critical paths
-- **Platform Tests**: Cross-platform compatibility
+- **Unit Testler**: Bireysel modül işlevselliği
+- **Integration Testler**: Uçtan uca sistem davranışı  
+- **Performance Testler**: Kritik yolların benchmark'ı
+- **Platform Testler**: Cross-platform uyumluluk
 
 ---
 
-## 🏗️ Architecture
-
-```
-grainx/
-├── 📁 src/
-│   ├── 🦀 main.rs              # Application entry point
-│   ├── 📊 analytics.rs         # Anomaly detection & prediction
-│   ├── ⚙️  config.rs           # Configuration management
-│   ├── 🖥️  monitor.rs          # System monitoring core
-│   ├── 🎨 rendering.rs         # Braille graphics engine
-│   ├── 🖼️  ui.rs               # User interface & dashboard
-│   ├── ⌨️  input.rs            # Keyboard input handling
-│   ├── ❓ help.rs             # Help system
-│   └── ⚡ performance.rs       # Performance optimizations
-├── 🧪 tests/                   # Integration tests
-├── 📈 benches/                 # Performance benchmarks
-└── 📋 dashboard_config.json    # Configuration file
-```
-
----
-
-## 🌍 Platform Compatibility
+## 🌍 Platform Uyumluluğu
 
 <div align="center">
 
-| Platform | Support | Notes |
-|----------|:-------:|-------|
-| **🐧 Linux** | ✅ **Full** | Native development platform |
-| **🍎 macOS 11+** | ✅ **Full** | Complete feature set |
-
-| **🪟 Windows 10+** | ✅ **Full** | Best with Windows Terminal |
+| Platform | Destek | Notlar |
+|----------|:------:|--------|
+| **🐧 Linux** | ✅ **Tam** | Native geliştirme platformu |
+| **🍎 macOS 11+** | ✅ **Tam** | Tam özellik seti |
+| **🪟 Windows 10+** | ✅ **Tam** | Windows Terminal ile en iyi deneyim |
 
 </div>
 
-### Performance Metrics
+### Performans Metrikleri
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **Memory Usage** | ~5-10MB | Typical runtime usage |
-| **CPU Impact** | <1% | On modern systems |
-| **Refresh Rate** | 250ms-2s | Adaptive based on load |
-| **Startup Time** | ~100-200ms | Platform dependent |
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how to get started:
-
-### Development Setup
-
-```bash
-# Fork and clone
-git clone https://github.com/yourusername/grainx.git
-cd grainx
-
-# Create feature branch
-git checkout -b feature/amazing-feature
-
-# Make changes and test
-cargo test
-cargo clippy
-cargo fmt
-
-# Commit and push
-git commit -m "Add amazing feature"
-git push origin feature/amazing-feature
-```
-
-### Contribution Guidelines
-
-- 🧪 **Add tests** for new functionality
-- 📝 **Update documentation** for API changes  
-- 🎨 **Follow Rust conventions** (rustfmt, clippy)
-- ✅ **Ensure all tests pass** before submitting
-- 📋 **Write clear commit messages**
-
-### Areas for Contribution
-
-- 🌐 **Platform support** (FreeBSD, etc.)
-- 🎨 **UI improvements** and themes
-- 📊 **New monitoring metrics**
-- 🔧 **Performance optimizations**
-- 🌍 **Internationalization**
+| Metrik | Değer | Notlar |
+|--------|-------|--------|
+| **Bellek Kullanımı** | ~5-10MB | Tipik çalışma zamanı kullanımı |
+| **CPU Etkisi** | <1% | Modern sistemlerde |
+| **Yenileme Hızı** | 250ms-2s | Yüke göre adaptif |
+| **Başlama Süresi** | ~100-200ms | Platforma bağlı |
 
 ---
 
-## 🐛 Troubleshooting
+## 🐛 Sorun Giderme
 
 <details>
-<summary><b>Common Issues & Solutions</b></summary>
+<summary><b>Yaygın Sorunlar ve Çözümler</b></summary>
 
-### Unicode Display Issues
+### Unicode Görüntü Sorunları
 ```bash
 # Linux/macOS
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
+export LANG=tr_TR.UTF-8
+export LC_ALL=tr_TR.UTF-8
 
 # Windows
 chcp 65001
 ```
 
-### Permission Errors
+### İzin Hataları
 ```bash
-# Linux/macOS - for full system access
+# Linux/macOS - tam sistem erişimi için
 sudo ./target/release/grainx
 
-# Windows - run as Administrator
+# Windows - Yönetici olarak çalıştır
 ```
 
-### High CPU Usage
-- Press `a` to toggle adaptive refresh
-- Increase refresh interval in config
-- Check for system bottlenecks
+### Yüksek CPU Kullanımı
+- Adaptif yenilemeyi açmak için `a` tuşuna basın
+- Config'de yenileme aralığını artırın
+- Sistem darboğazlarını kontrol edin
 
 </details>
 
-### Debug Mode
+### Debug Modu
 
 ```bash
 RUST_LOG=debug cargo run
-RUST_LOG=grainx=trace cargo run  # Verbose logging
+RUST_LOG=grainx=trace cargo run  # Ayrıntılı loglama
 ```
 
 ---
 
-## 📄 License
+## 🤝 Katkıda Bulunma
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+Katkılarınızı memnuniyetle karşılıyoruz! Başlamak için:
+
+### Geliştirme Kurulumu
+
+```bash
+# Fork ve clone
+git clone https://github.com/rustfuture/grainx.git
+cd grainx
+
+# Özellik branch'i oluştur
+git checkout -b feature/harika-ozellik
+
+# Değişiklik yap ve test et
+cargo test
+cargo clippy
+cargo fmt
+
+# Commit ve push
+git commit -m "Harika özellik ekle"
+git push origin feature/harika-ozellik
+```
+
+### Katkı Rehberi
+
+- 🧪 **Yeni işlevsellik için test ekle**
+- 📝 **API değişiklikleri için dokümantasyonu güncelle**  
+- 🎨 **Rust konvansiyonlarını takip et** (rustfmt, clippy)
+- ✅ **Göndermeden önce tüm testlerin geçtiğinden emin ol**
+- 📋 **Açık commit mesajları yaz**
 
 ---
 
-## 🙏 Acknowledgments
+## 📄 Lisans
 
-- 🦀 **[sysinfo](https://github.com/GuillaumeGomez/sysinfo)** - Cross-platform system information
-- 🖥️ **[crossterm](https://github.com/crossterm-rs/crossterm)** - Terminal manipulation
-- 📊 **[criterion](https://github.com/bheisler/criterion.rs)** - Performance benchmarking
-- 🎨 **Unicode Consortium** - Braille pattern standards
+Bu proje **MIT Lisansı** altında lisanslanmıştır - detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+---
+
+## 🙏 Teşekkürler
+
+- 🦀 **[sysinfo](https://github.com/GuillaumeGomez/sysinfo)** - Cross-platform sistem bilgisi
+- 🖥️ **[crossterm](https://github.com/crossterm-rs/crossterm)** - Terminal manipülasyonu
+- 📊 **[criterion](https://github.com/bheisler/criterion.rs)** - Performance benchmark'ı
+- 🎨 **Unicode Consortium** - Braille karakter standartları
 
 ---
 
 <div align="center">
 
-### ⭐ Star this project if you find it useful!
+### ⭐ Bu projeyi faydalı buluyorsanız yıldızlamayı unutmayın!
 
-**Made with ❤️ and 🦀 Rust**
+**❤️ ve 🦀 Rust ile yapıldı**
 
-[⬆ Back to Top](#-grainx)
+[⬆ Başa Dön](#-grainx)
 
 </div>
