@@ -1,1 +1,23 @@
+# Rust
 target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test artifacts
+test_config.json
+grainx_stats.txt
+
+# Temporary files
+tmp_*
