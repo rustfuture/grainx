@@ -1,0 +1,10 @@
+# Explicitly mark Rust files
+*.rs linguist-language=Rust
+
+# Ignore common build output directories and generated files
+target/ linguist-vendored
+*.lock linguist-generated
+
+# Mark files that might be misidentified as Makefiles
+*.mk linguist-generated
+Makefile linguist-generated
