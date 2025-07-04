@@ -376,8 +376,8 @@ Bu proje **MIT Lisansı** altında lisanslanmıştır - detaylar için [LICENSE]
 
 ### ⭐ Bu projeyi faydalı buluyorsanız yıldızlamayı unutmayın!
 
-Made with ❤️ and 🦀 Rust
+Made with ❤️ and Rust
 
-[⬆ Back to Top](#top)
+[⬆ Başa Dön](#top)
 
 </div>
