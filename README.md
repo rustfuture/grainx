@@ -1,10 +1,10 @@
+<a name="top"></a>
 <div align="center">
 
 # 🖥️ grainx
 
 [![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg?style=for-the-badge&logo=rust)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-30%2F30%20geçiyor-brightgreen.svg?style=for-the-badge)](#testler)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=for-the-badge)](#platform-uyumluluğu)
 
 **Modern, cross-platform, terminal tabanlı sistem izleme aracı**
@@ -237,10 +237,7 @@ grainx özelleştirme için JSON konfigürasyon dosyası kullanır:
 
 ## 🧪 Testler
 
-grainx **30/30 test geçiyor** ✅ ile kapsamlı test kapsamına sahiptir
-
-```bash
-# Tüm testleri çalıştır
+graintestleri çalıştır
 cargo test
 
 # Belirli modülleri test et
@@ -379,8 +376,8 @@ Bu proje **MIT Lisansı** altında lisanslanmıştır - detaylar için [LICENSE]
 
 ### ⭐ Bu projeyi faydalı buluyorsanız yıldızlamayı unutmayın!
 
-**❤️ ve 🦀 Rust ile yapıldı**
+Made with ❤️ and 🦀 Rust
 
-[⬆ Başa Dön](#-grainx)
+[⬆ Back to Top](#top)
 
 </div>
