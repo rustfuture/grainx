@@ -1,5 +1,5 @@
-use std::time::{Duration, Instant};
 use std::collections::VecDeque;
+use std::time::{Duration, Instant};
 
 pub struct PerformanceMonitor {
     frame_times: VecDeque<Duration>,
@@ -27,11 +27,11 @@ impl PerformanceMonitor {
     pub fn end_frame(&mut self) -> Duration {
         let frame_duration = self.last_frame_time.elapsed();
         self.frame_times.push_back(frame_duration);
-        
+
         if self.frame_times.len() > 60 {
             self.frame_times.pop_front();
         }
-        
+
         frame_duration
     }
 
@@ -39,8 +39,9 @@ impl PerformanceMonitor {
         if self.frame_times.is_empty() {
             return 0.0;
         }
-        
-        let avg_duration: Duration = self.frame_times.iter().sum::<Duration>() / self.frame_times.len() as u32;
+
+        let avg_duration: Duration =
+            self.frame_times.iter().sum::<Duration>() / self.frame_times.len() as u32;
         1.0 / avg_duration.as_secs_f64()
     }
 
@@ -48,8 +49,9 @@ impl PerformanceMonitor {
         if self.frame_times.is_empty() {
             return 0.0;
         }
-        
-        let avg_duration: Duration = self.frame_times.iter().sum::<Duration>() / self.frame_times.len() as u32;
+
+        let avg_duration: Duration =
+            self.frame_times.iter().sum::<Duration>() / self.frame_times.len() as u32;
         avg_duration.as_secs_f64() * 1000.0
     }
 
@@ -63,20 +65,19 @@ impl PerformanceMonitor {
             return (1000.0 / self.target_fps) as u64;
         }
 
-        let avg_cpu = self.cpu_load_history.iter().sum::<f32>() / self.cpu_load_history.len() as f32;
-        
+        let avg_cpu =
+            self.cpu_load_history.iter().sum::<f32>() / self.cpu_load_history.len() as f32;
+
         // Adaptive refresh based on system load
-        let refresh_ms = if avg_cpu > 90.0 {
+        if avg_cpu > 90.0 {
             2000 // Very slow refresh when system is overloaded
         } else if avg_cpu > 70.0 {
             1000 // Normal refresh
         } else if avg_cpu > 50.0 {
-            500  // Fast refresh
+            500 // Fast refresh
         } else {
-            250  // Very fast refresh when system is idle
-        };
-
-        refresh_ms
+            250 // Very fast refresh when system is idle
+        }
     }
 
     pub fn should_skip_frame(&self, cpu_usage: f32) -> bool {
@@ -85,7 +86,11 @@ impl PerformanceMonitor {
     }
 
     pub fn get_performance_stats(&self) -> (f64, f64, bool) {
-        (self.get_fps(), self.get_frame_time_ms(), self.adaptive_refresh)
+        (
+            self.get_fps(),
+            self.get_frame_time_ms(),
+            self.adaptive_refresh,
+        )
     }
 
     pub fn toggle_adaptive_refresh(&mut self) {
@@ -132,5 +137,4 @@ mod tests {
         perf.toggle_adaptive_refresh();
         assert_ne!(initial, perf.adaptive_refresh);
     }
-
 }

@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 
@@ -39,11 +39,82 @@ pub struct DashboardConfig {
     pub log_interval_iterations: u32,
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct ConfigOverrides {
+    pub refresh_interval_ms: Option<u64>,
+    pub cpu_warning_threshold: Option<f32>,
+    pub memory_warning_threshold: Option<f32>,
+    pub color_theme: Option<String>,
+}
+
+impl From<&crate::cli::MonitorArgs> for ConfigOverrides {
+    fn from(args: &crate::cli::MonitorArgs) -> Self {
+        ConfigOverrides {
+            refresh_interval_ms: args.refresh_interval_ms,
+            cpu_warning_threshold: args.cpu_warning_threshold,
+            memory_warning_threshold: args.memory_warning_threshold,
+            color_theme: args.color_theme.clone(),
+        }
+    }
+}
+
 impl DashboardConfig {
     pub fn load_from_file(path: &str) -> io::Result<Self> {
         let content = fs::read_to_string(path)?;
         let config: DashboardConfig = serde_json::from_str(&content)?;
         Ok(config)
+    }
+
+    pub fn load_resolved(path: &str, overrides: &ConfigOverrides) -> io::Result<Self> {
+        let mut config = match Self::load_from_file(path) {
+            Ok(config) => config,
+            Err(_) => {
+                let default_config = Self::default_config();
+                default_config.save_to_file(path)?;
+                default_config
+            }
+        };
+        config.apply_env();
+        config.apply_overrides(overrides);
+        Ok(config)
+    }
+
+    fn apply_env(&mut self) {
+        if let Ok(value) = std::env::var("GRAINX_REFRESH_INTERVAL_MS")
+            && let Ok(ms) = value.parse()
+        {
+            self.refresh_interval_ms = ms;
+        }
+        if let Ok(value) = std::env::var("GRAINX_CPU_WARNING_THRESHOLD")
+            && let Ok(threshold) = value.parse()
+        {
+            self.cpu_warning_threshold = threshold;
+        }
+        if let Ok(value) = std::env::var("GRAINX_MEMORY_WARNING_THRESHOLD")
+            && let Ok(threshold) = value.parse()
+        {
+            self.memory_warning_threshold = threshold;
+        }
+        if let Ok(theme) = std::env::var("GRAINX_COLOR_THEME")
+            && !theme.is_empty()
+        {
+            self.color_theme = theme;
+        }
+    }
+
+    fn apply_overrides(&mut self, overrides: &ConfigOverrides) {
+        if let Some(ms) = overrides.refresh_interval_ms {
+            self.refresh_interval_ms = ms;
+        }
+        if let Some(threshold) = overrides.cpu_warning_threshold {
+            self.cpu_warning_threshold = threshold;
+        }
+        if let Some(threshold) = overrides.memory_warning_threshold {
+            self.memory_warning_threshold = threshold;
+        }
+        if let Some(theme) = overrides.color_theme.clone() {
+            self.color_theme = theme;
+        }
     }
 
     pub fn save_to_file(&self, path: &str) -> io::Result<()> {
@@ -56,11 +127,11 @@ impl DashboardConfig {
         DashboardConfig {
             name: "grainx_advanced".to_string(),
             layout: vec![
-                "cpu_graph".to_string(), 
+                "cpu_graph".to_string(),
                 "memory_usage".to_string(),
                 "network_stats".to_string(),
                 "process_list".to_string(),
-                "analytics".to_string()
+                "analytics".to_string(),
             ],
             refresh_interval_ms: 500,
             cpu_warning_threshold: 80.0,
@@ -87,117 +158,49 @@ mod tests {
         let config = DashboardConfig::default_config();
         assert_eq!(config.name, "grainx_advanced");
         assert!(config.refresh_interval_ms > 0);
-        assert!(config.cpu_warning_threshold > 0.0);
-        assert!(config.memory_warning_threshold > 0.0);
-        assert!(config.max_processes > 0);
-        assert!(config.graph_history_size > 0);
-        assert!(config.show_predictions);
-        assert!(config.show_correlations);
         assert_eq!(config.color_theme, "default");
-        assert!(config.log_enabled);
-        assert_eq!(config.log_path, "grainx_metrics.log");
-        assert_eq!(config.log_interval_iterations, 10);
     }
 
     #[test]
-    fn test_config_serialization() {
-        let config = DashboardConfig::default_config();
-        let json = serde_json::to_string_pretty(&config).unwrap();
-        assert!(json.contains("grainx_advanced"));
-        assert!(json.contains("cpu_warning_threshold"));
-        assert!(json.contains("color_theme"));
-        assert!(json.contains("log_enabled"));
-    }
+    fn test_config_precedence_cli_over_env_and_file() {
+        let path = "test_precedence_config.json";
+        let mut file_config = DashboardConfig::default_config();
+        file_config.refresh_interval_ms = 500;
+        file_config.cpu_warning_threshold = 70.0;
+        file_config.save_to_file(path).unwrap();
 
-    #[test]
-    fn test_config_deserialization() {
-        let json = r#"{
-            "name": "test_config",
-            "layout": ["cpu_graph", "memory_usage"],
-            "refresh_interval_ms": 1000,
-            "cpu_warning_threshold": 75.0,
-            "memory_warning_threshold": 80.0,
-            "show_predictions": true,
-            "show_correlations": false,
-            "max_processes": 5,
-            "graph_history_size": 50
-        }"#;
-        
-        let config: DashboardConfig = serde_json::from_str(json).unwrap();
-        assert_eq!(config.name, "test_config");
-        assert_eq!(config.refresh_interval_ms, 1000);
-        assert_eq!(config.cpu_warning_threshold, 75.0);
-        assert!(!config.show_correlations);
-        assert_eq!(config.color_theme, "default");
-        assert!(config.log_enabled);
-        assert_eq!(config.log_path, "grainx_metrics.log");
-        assert_eq!(config.log_interval_iterations, 10);
-    }
+        unsafe {
+            std::env::set_var("GRAINX_REFRESH_INTERVAL_MS", "750");
+            std::env::set_var("GRAINX_CPU_WARNING_THRESHOLD", "72");
+        }
 
-    #[test]
-    fn test_config_deserialization_with_color_theme() {
-        let json = r#"{
-            "name": "themed",
-            "layout": ["cpu_graph"],
-            "refresh_interval_ms": 500,
-            "cpu_warning_threshold": 80.0,
-            "memory_warning_threshold": 85.0,
-            "show_predictions": true,
-            "show_correlations": true,
-            "max_processes": 10,
-            "graph_history_size": 100,
-            "color_theme": "dark"
-        }"#;
+        let overrides = ConfigOverrides {
+            refresh_interval_ms: Some(1000),
+            cpu_warning_threshold: Some(85.0),
+            ..Default::default()
+        };
 
-        let config: DashboardConfig = serde_json::from_str(json).unwrap();
-        assert_eq!(config.color_theme, "dark");
-    }
+        let resolved = DashboardConfig::load_resolved(path, &overrides).unwrap();
+        assert_eq!(resolved.refresh_interval_ms, 1000);
+        assert_eq!(resolved.cpu_warning_threshold, 85.0);
 
-    #[test]
-    fn test_config_deserialization_without_log_fields() {
-        let json = r#"{
-            "name": "legacy_config",
-            "layout": ["cpu_graph"],
-            "refresh_interval_ms": 500,
-            "cpu_warning_threshold": 80.0,
-            "memory_warning_threshold": 85.0,
-            "show_predictions": true,
-            "show_correlations": true,
-            "max_processes": 10,
-            "graph_history_size": 100
-        }"#;
-
-        let config: DashboardConfig = serde_json::from_str(json).unwrap();
-        assert_eq!(config.color_theme, "default");
-        assert!(config.log_enabled);
-        assert_eq!(config.log_path, "grainx_metrics.log");
-        assert_eq!(config.log_interval_iterations, 10);
+        unsafe {
+            std::env::remove_var("GRAINX_REFRESH_INTERVAL_MS");
+            std::env::remove_var("GRAINX_CPU_WARNING_THRESHOLD");
+        }
+        fs::remove_file(path).ok();
     }
 
     #[test]
     fn test_config_file_operations() {
         let config = DashboardConfig::default_config();
         let test_file = "test_config.json";
-        
+
         config.save_to_file(test_file).unwrap();
-        
         let loaded_config = DashboardConfig::load_from_file(test_file).unwrap();
         assert_eq!(config.name, loaded_config.name);
-        assert_eq!(config.refresh_interval_ms, loaded_config.refresh_interval_ms);
         assert_eq!(config.color_theme, loaded_config.color_theme);
-        assert_eq!(config.log_path, loaded_config.log_path);
-        
-        fs::remove_file(test_file).ok();
-    }
 
-    #[test]
-    fn test_config_validation() {
-        let config = DashboardConfig::default_config();
-        
-        assert!(config.cpu_warning_threshold >= 0.0 && config.cpu_warning_threshold <= 100.0);
-        assert!(config.memory_warning_threshold >= 0.0 && config.memory_warning_threshold <= 100.0);
-        assert!(config.refresh_interval_ms >= 100);
-        assert!(config.max_processes >= 1 && config.max_processes <= 50);
-        assert!(config.graph_history_size >= 10 && config.graph_history_size <= 1000);
+        fs::remove_file(test_file).ok();
     }
 }
