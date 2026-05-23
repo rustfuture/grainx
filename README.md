@@ -150,6 +150,9 @@ cargo run -- monitor             # Açıkça monitor modu
 cargo run -- agent -p 9090       # HTTP metrics agent
 cargo run -- monitor --remote http://127.0.0.1:9090  # Remote TUI
 cargo run -- version             # Sürüm bilgisi
+cargo run -- export              # Headless JSON/CSV export (TUI gerekmez)
+cargo run -- export --remote http://127.0.0.1:9090  # Remote export
+grainx completions bash > /etc/bash_completion.d/grainx  # Shell tamamlama
 cargo test                       # Test paketini çalıştır
 cargo clippy -- -D warnings      # Lint kontrolü
 cargo bench                      # Benchmark'ları çalıştır

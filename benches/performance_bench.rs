@@ -1,5 +1,6 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use grainx::analytics::{calculate_correlation, evaluate_metric_formula, predict_next_value};
+use grainx::monitor::SystemMonitor;
 use grainx::performance::PerformanceMonitor;
 use std::collections::HashMap;
 
@@ -39,6 +40,15 @@ fn benchmark_metric_formula(c: &mut Criterion) {
                 black_box("cpu_usage * 1.5 + memory_usage * 0.8"),
                 black_box(&metrics),
             )
+        })
+    });
+}
+
+fn benchmark_monitor_refresh(c: &mut Criterion) {
+    c.bench_function("system_monitor_refresh", |b| {
+        b.iter(|| {
+            let mut monitor = SystemMonitor::new();
+            black_box(monitor.refresh());
         })
     });
 }
