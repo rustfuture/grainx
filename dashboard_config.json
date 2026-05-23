@@ -14,6 +14,7 @@
   "show_correlations": true,
   "max_processes": 10,
   "graph_history_size": 100,
+  "color_theme": "default",
   "log_enabled": true,
   "log_path": "grainx_metrics.log",
   "log_interval_iterations": 10

@@ -3,7 +3,8 @@ use crate::monitor::SystemMonitor;
 use crate::rendering::{AdvancedCanvas, DashboardLayout};
 use crate::help::show_help;
 use crate::performance::PerformanceMonitor;
-use crossterm::{event::{self, Event, KeyCode, poll}, style::Color};
+use crate::theme::ThemePalette;
+use crossterm::event::{self, Event, KeyCode, poll};
 use std::io;
 use std::time::Duration;
 
@@ -19,9 +20,9 @@ pub fn handle_input(
     monitor: &mut SystemMonitor, 
     canvas: &mut AdvancedCanvas, 
     layout: &DashboardLayout,
+    palette: &ThemePalette,
     perf_monitor: Option<&mut PerformanceMonitor>
 ) -> io::Result<Action> {
-    // Non-blocking input check
     if poll(Duration::from_millis(50))? {
         match event::read()? {
             Event::Resize(width, height) => {
@@ -43,31 +44,27 @@ pub fn handle_input(
                     }
                 }
                 KeyCode::Char('k') => {
-                    // Kill selected process with confirmation
                     if !processes.is_empty() && *selected_process < processes.len() {
                         let (pid, name, _, _) = &processes[*selected_process];
                         
-                        // Show confirmation dialog
                         canvas.set_cursor(0, layout.proc_start_y + 10)?;
-                        canvas.set_color(Color::Red)?;
+                        canvas.set_color(palette.critical)?;
                         canvas.draw_str(&format!("Kill process '{}' (PID: {})? (y/N): ", name, pid))?;
                         
-                        // Wait for confirmation
                         if let Event::Key(confirm_key) = event::read()? {
                             if let KeyCode::Char('y') | KeyCode::Char('Y') = confirm_key.code {
                                 if monitor.kill_process(*pid) {
                                     canvas.set_cursor(0, layout.proc_start_y + 11)?;
-                                    canvas.set_color(Color::Green)?;
+                                    canvas.set_color(palette.ok)?;
                                     canvas.draw_str(&format!("Process {} killed successfully!", name))?;
                                 } else {
                                     canvas.set_cursor(0, layout.proc_start_y + 11)?;
-                                    canvas.set_color(Color::Red)?;
+                                    canvas.set_color(palette.critical)?;
                                     canvas.draw_str(&format!("Failed to kill process {}", name))?;
                                 }
                             }
                         }
                         
-                        // Clear confirmation area after 2 seconds
                         std::thread::sleep(Duration::from_secs(2));
                         canvas.set_cursor(0, layout.proc_start_y + 10)?;
                         canvas.draw_str(&" ".repeat(layout.term_width as usize))?;
@@ -76,23 +73,19 @@ pub fn handle_input(
                     }
                 }
                 KeyCode::Char('r') => {
-                    // Refresh/reset monitoring
                     canvas.set_cursor(0, 0)?;
-                    canvas.set_color(Color::Cyan)?;
+                    canvas.set_color(palette.header)?;
                     canvas.draw_str("Refreshing...")?;
                 }
                 KeyCode::Char('h') | KeyCode::Char('?') => {
-                    // Show help menu
-                    show_help(canvas)?;
-                    // Wait for any key to continue
+                    show_help(canvas, palette)?;
                     event::read()?;
                 }
                 KeyCode::Char('p') => {
-                    // Pause/Resume functionality
                     canvas.set_cursor(0, 0)?;
-                    canvas.set_color(Color::Yellow)?;
+                    canvas.set_color(palette.warning)?;
                     canvas.draw_str("PAUSED - Press any key to continue...")?;
-                    event::read()?; // Wait for any key
+                    event::read()?;
                 }
                 KeyCode::Char('s') => {
                     const JSON_PATH: &str = "grainx_stats.json";
@@ -101,32 +94,31 @@ pub fn handle_input(
                     canvas.set_cursor(0, 0)?;
                     match StatsSnapshot::save_both(JSON_PATH, CSV_PATH, monitor) {
                         Ok(()) => {
-                            canvas.set_color(Color::Green)?;
+                            canvas.set_color(palette.ok)?;
                             canvas.draw_str(&format!(
                                 "Stats saved to {} and {}",
                                 JSON_PATH, CSV_PATH
                             ))?;
                         }
                         Err(err) => {
-                            canvas.set_color(Color::Red)?;
+                            canvas.set_color(palette.critical)?;
                             canvas.draw_str(&format!("Failed to save stats: {err}"))?;
                         }
                     }
                 }
                 KeyCode::Char('a') => {
-                    // Toggle adaptive refresh
                     if let Some(perf) = perf_monitor {
                         perf.toggle_adaptive_refresh();
                         canvas.set_cursor(0, 0)?;
-                        canvas.set_color(Color::Cyan)?;
+                        canvas.set_color(palette.header)?;
                         canvas.draw_str("Adaptive refresh toggled!")?;
                     }
                 }
                 _ => {}
             }
         }
-            _ => {} // Ignore mouse, focus, paste events
-        } // match event type
+            _ => {}
+        }
     }
     Ok(Action::Continue)
 }
