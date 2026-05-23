@@ -1,7 +1,6 @@
 mod rendering;
 mod analytics;
 mod config;
-mod logging;
 mod monitor;
 mod input;
 mod ui;
@@ -100,6 +99,8 @@ async fn main() -> io::Result<()> {
             &mut current_mem_y_val,
             &mut perf_monitor
         ).await?;
+
+        metric_logger.maybe_log(iteration_count, &mut monitor)?;
 
         let frame_duration = perf_monitor.end_frame();
         let adaptive_refresh = perf_monitor.calculate_adaptive_refresh(current_cpu);
