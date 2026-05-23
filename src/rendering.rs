@@ -198,3 +198,35 @@ impl AdvancedCanvas {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout_enforces_minimum_terminal_size() {
+        let layout = DashboardLayout::from_terminal_size(20, 10);
+        assert!(layout.term_width >= 60);
+        assert!(layout.term_height >= 20);
+        assert!(layout.cpu_rect.height >= 8);
+        assert!(layout.mem_rect.height >= 4);
+        assert!(layout.net_rect.height >= 3);
+        assert!(layout.footer_y >= 19);
+    }
+
+    #[test]
+    fn layout_scales_with_large_terminal() {
+        let layout = DashboardLayout::from_terminal_size(120, 40);
+        assert_eq!(layout.term_width, 120);
+        assert_eq!(layout.cpu_rect.width, 120);
+        assert!(layout.proc_start_y > layout.network_start_y);
+        assert!(layout.footer_y <= 39);
+    }
+
+    #[test]
+    fn layout_network_section_below_graphs() {
+        let layout = DashboardLayout::from_terminal_size(80, 24);
+        assert!(layout.network_start_y > layout.net_rect.y);
+        assert!(layout.proc_start_y > layout.network_start_y);
+    }
+}

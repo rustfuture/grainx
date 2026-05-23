@@ -1,6 +1,6 @@
+use crate::error::{GrainxError, Result};
 use crate::export::StatsSnapshot;
 use crate::monitor::{SystemMetrics, SystemMonitor};
-use std::io;
 use std::time::Duration;
 
 const REMOTE_TIMEOUT: Duration = Duration::from_secs(5);
@@ -19,7 +19,7 @@ impl MetricBackend {
         MetricBackend::Remote(Box::new(RemoteMetricsClient::new(url)))
     }
 
-    pub fn refresh(&mut self) -> io::Result<SystemMetrics> {
+    pub fn refresh(&mut self) -> Result<SystemMetrics> {
         match self {
             MetricBackend::Local(monitor) => Ok(monitor.refresh().clone()),
             MetricBackend::Remote(client) => client.fetch(),
@@ -33,7 +33,7 @@ impl MetricBackend {
         }
     }
 
-    pub fn get_processes(&mut self) -> io::Result<Vec<(usize, String, f32, u64)>> {
+    pub fn get_processes(&mut self) -> Result<Vec<(usize, String, f32, u64)>> {
         match self {
             MetricBackend::Local(monitor) => Ok(monitor.get_processes()),
             MetricBackend::Remote(client) => Ok(client.processes()),
@@ -79,7 +79,7 @@ impl RemoteMetricsClient {
         }
     }
 
-    pub fn fetch(&mut self) -> io::Result<SystemMetrics> {
+    pub fn fetch(&mut self) -> Result<SystemMetrics> {
         match self.client.get(&self.metrics_url).send() {
             Ok(response) => {
                 if !response.status().is_success() {
@@ -88,14 +88,11 @@ impl RemoteMetricsClient {
                         response.status()
                     );
                     self.last_error = Some(message.clone());
-                    return Err(io::Error::other(message));
+                    return Err(GrainxError::RemoteMetrics(message));
                 }
 
                 let snapshot: StatsSnapshot = response.json().map_err(|e| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!("invalid metrics JSON: {e}"),
-                    )
+                    GrainxError::RemoteMetrics(format!("invalid metrics JSON: {e}"))
                 })?;
 
                 let metrics = system_metrics_from_snapshot(snapshot);
@@ -112,7 +109,7 @@ impl RemoteMetricsClient {
                 if let Some(metrics) = self.last_metrics.clone() {
                     Ok(metrics)
                 } else {
-                    Err(io::Error::new(io::ErrorKind::NotConnected, message))
+                    Err(GrainxError::RemoteMetrics(message))
                 }
             }
         }
@@ -191,6 +188,13 @@ mod tests {
         let mut backend = MetricBackend::local();
         let metrics = backend.refresh().unwrap();
         assert!(metrics.memory_total > 0);
+    }
+
+    #[test]
+    fn remote_backend_errors_when_agent_unreachable() {
+        let mut backend = MetricBackend::remote("http://127.0.0.1:59999");
+        let err = backend.refresh().unwrap_err();
+        assert!(matches!(err, GrainxError::RemoteMetrics(_)));
     }
 
     #[tokio::test]

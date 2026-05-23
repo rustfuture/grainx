@@ -1,3 +1,4 @@
+use crate::error::{GrainxError, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
@@ -65,12 +66,17 @@ impl DashboardConfig {
         Ok(config)
     }
 
-    pub fn load_resolved(path: &str, overrides: &ConfigOverrides) -> io::Result<Self> {
+    pub fn load_resolved(path: &str, overrides: &ConfigOverrides) -> Result<Self> {
         let mut config = match Self::load_from_file(path) {
             Ok(config) => config,
             Err(_) => {
                 let default_config = Self::default_config();
-                default_config.save_to_file(path)?;
+                default_config
+                    .save_to_file(path)
+                    .map_err(|source| GrainxError::ConfigLoad {
+                        path: path.to_string(),
+                        source,
+                    })?;
                 default_config
             }
         };

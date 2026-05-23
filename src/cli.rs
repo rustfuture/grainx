@@ -1,4 +1,5 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -24,8 +25,37 @@ pub enum Commands {
         #[arg(short, long, default_value_t = 9090)]
         port: u16,
     },
+    /// Export system metrics to JSON and CSV (no TUI required)
+    Export(ExportArgs),
+    /// Generate shell completion scripts
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: ShellArg,
+    },
     /// Print version information
     Version,
+}
+
+#[derive(ValueEnum, Debug, Clone, Copy)]
+pub enum ShellArg {
+    Bash,
+    Elvish,
+    Fish,
+    PowerShell,
+    Zsh,
+}
+
+impl From<ShellArg> for Shell {
+    fn from(value: ShellArg) -> Self {
+        match value {
+            ShellArg::Bash => Shell::Bash,
+            ShellArg::Elvish => Shell::Elvish,
+            ShellArg::Fish => Shell::Fish,
+            ShellArg::PowerShell => Shell::PowerShell,
+            ShellArg::Zsh => Shell::Zsh,
+        }
+    }
 }
 
 #[derive(Args, Debug, Clone)]
@@ -48,6 +78,19 @@ pub struct MonitorArgs {
     /// Override color theme (default, dark, light, high_contrast)
     #[arg(long)]
     pub color_theme: Option<String>,
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct ExportArgs {
+    /// JSON output path
+    #[arg(long, default_value = "grainx_stats.json")]
+    pub json: String,
+    /// CSV output path
+    #[arg(long, default_value = "grainx_stats.csv")]
+    pub csv: String,
+    /// Remote agent base URL instead of local sysinfo
+    #[arg(long)]
+    pub remote: Option<String>,
 }
 
 impl Cli {
@@ -108,6 +151,39 @@ mod tests {
                 assert_eq!(args.refresh_interval_ms, Some(1000));
             }
             _ => panic!("expected monitor command"),
+        }
+    }
+
+    #[test]
+    fn parses_export_subcommand() {
+        let cli = Cli::parse_from([
+            "grainx",
+            "export",
+            "--json",
+            "out.json",
+            "--csv",
+            "out.csv",
+            "--remote",
+            "http://127.0.0.1:9090",
+        ]);
+        match cli.resolved_command() {
+            Commands::Export(args) => {
+                assert_eq!(args.json, "out.json");
+                assert_eq!(args.csv, "out.csv");
+                assert_eq!(args.remote.as_deref(), Some("http://127.0.0.1:9090"));
+            }
+            _ => panic!("expected export command"),
+        }
+    }
+
+    #[test]
+    fn parses_completions_subcommand() {
+        let cli = Cli::parse_from(["grainx", "completions", "bash"]);
+        match cli.resolved_command() {
+            Commands::Completions { shell } => {
+                assert!(matches!(shell, ShellArg::Bash));
+            }
+            _ => panic!("expected completions command"),
         }
     }
 }

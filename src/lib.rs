@@ -2,6 +2,7 @@ pub mod agent;
 pub mod analytics;
 pub mod cli;
 pub mod config;
+pub mod error;
 pub mod export;
 pub mod logging;
 pub mod metrics;
@@ -10,3 +11,5 @@ pub mod network;
 pub mod performance;
 pub mod rendering;
 pub mod theme;
+
+pub use error::{GrainxError, Result};
