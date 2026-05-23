@@ -18,6 +18,10 @@ Thumbs.db
 # Test artifacts
 test_config.json
 grainx_stats.txt
+grainx_stats.json
+grainx_stats.csv
+test_grainx_stats.json
+test_grainx_stats.csv
 
 # Temporary files
 tmp_*

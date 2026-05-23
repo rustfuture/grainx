@@ -1,3 +1,4 @@
+use crate::export::StatsSnapshot;
 use crate::monitor::SystemMonitor;
 use crate::rendering::{AdvancedCanvas, DashboardLayout};
 use crate::help::show_help;
@@ -94,11 +95,23 @@ pub fn handle_input(
                     event::read()?; // Wait for any key
                 }
                 KeyCode::Char('s') => {
-                    // Save current stats to file
+                    const JSON_PATH: &str = "grainx_stats.json";
+                    const CSV_PATH: &str = "grainx_stats.csv";
+
                     canvas.set_cursor(0, 0)?;
-                    canvas.set_color(Color::Green)?;
-                    canvas.draw_str("Stats saved to grainx_stats.txt")?;
-                    // TODO: Implement actual saving
+                    match StatsSnapshot::save_both(JSON_PATH, CSV_PATH, monitor) {
+                        Ok(()) => {
+                            canvas.set_color(Color::Green)?;
+                            canvas.draw_str(&format!(
+                                "Stats saved to {} and {}",
+                                JSON_PATH, CSV_PATH
+                            ))?;
+                        }
+                        Err(err) => {
+                            canvas.set_color(Color::Red)?;
+                            canvas.draw_str(&format!("Failed to save stats: {err}"))?;
+                        }
+                    }
                 }
                 KeyCode::Char('a') => {
                     // Toggle adaptive refresh
