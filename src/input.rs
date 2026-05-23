@@ -1,25 +1,35 @@
 use crate::monitor::SystemMonitor;
-use crate::rendering::AdvancedCanvas;
+use crate::rendering::{AdvancedCanvas, DashboardLayout};
 use crate::help::show_help;
 use crate::performance::PerformanceMonitor;
 use crossterm::{event::{self, Event, KeyCode, poll}, style::Color};
 use std::io;
 use std::time::Duration;
 
+pub enum Action {
+    Continue,
+    Exit,
+    Resize(u16, u16),
+}
+
 pub fn handle_input(
     selected_process: &mut usize, 
     processes: &Vec<(usize, String, f32, u64)>, 
     monitor: &mut SystemMonitor, 
     canvas: &mut AdvancedCanvas, 
-    proc_start_y: u16,
+    layout: &DashboardLayout,
     perf_monitor: Option<&mut PerformanceMonitor>
-) -> io::Result<bool> {
+) -> io::Result<Action> {
     // Non-blocking input check
     if poll(Duration::from_millis(50))? {
-        if let Event::Key(key_event) = event::read()? {
+        match event::read()? {
+            Event::Resize(width, height) => {
+                return Ok(Action::Resize(width, height));
+            }
+            Event::Key(key_event) => {
             match key_event.code {
                 KeyCode::Char('q') | KeyCode::Esc => {
-                    return Ok(false); // Exit program
+                    return Ok(Action::Exit);
                 }
                 KeyCode::Up => {
                     if *selected_process > 0 {
@@ -37,7 +47,7 @@ pub fn handle_input(
                         let (pid, name, _, _) = &processes[*selected_process];
                         
                         // Show confirmation dialog
-                        canvas.set_cursor(0, proc_start_y + 10)?;
+                        canvas.set_cursor(0, layout.proc_start_y + 10)?;
                         canvas.set_color(Color::Red)?;
                         canvas.draw_str(&format!("Kill process '{}' (PID: {})? (y/N): ", name, pid))?;
                         
@@ -45,11 +55,11 @@ pub fn handle_input(
                         if let Event::Key(confirm_key) = event::read()? {
                             if let KeyCode::Char('y') | KeyCode::Char('Y') = confirm_key.code {
                                 if monitor.kill_process(*pid) {
-                                    canvas.set_cursor(0, proc_start_y + 11)?;
+                                    canvas.set_cursor(0, layout.proc_start_y + 11)?;
                                     canvas.set_color(Color::Green)?;
                                     canvas.draw_str(&format!("Process {} killed successfully!", name))?;
                                 } else {
-                                    canvas.set_cursor(0, proc_start_y + 11)?;
+                                    canvas.set_cursor(0, layout.proc_start_y + 11)?;
                                     canvas.set_color(Color::Red)?;
                                     canvas.draw_str(&format!("Failed to kill process {}", name))?;
                                 }
@@ -58,10 +68,10 @@ pub fn handle_input(
                         
                         // Clear confirmation area after 2 seconds
                         std::thread::sleep(Duration::from_secs(2));
-                        canvas.set_cursor(0, proc_start_y + 10)?;
-                        canvas.draw_str(&" ".repeat(80))?;
-                        canvas.set_cursor(0, proc_start_y + 11)?;
-                        canvas.draw_str(&" ".repeat(80))?;
+                        canvas.set_cursor(0, layout.proc_start_y + 10)?;
+                        canvas.draw_str(&" ".repeat(layout.term_width as usize))?;
+                        canvas.set_cursor(0, layout.proc_start_y + 11)?;
+                        canvas.draw_str(&" ".repeat(layout.term_width as usize))?;
                     }
                 }
                 KeyCode::Char('r') => {
@@ -102,6 +112,8 @@ pub fn handle_input(
                 _ => {}
             }
         }
+            _ => {} // Ignore mouse, focus, paste events
+        } // match event type
     }
-    Ok(true)
+    Ok(Action::Continue)
 }
