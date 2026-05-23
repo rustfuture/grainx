@@ -8,15 +8,15 @@ mod help;
 mod performance;
 
 use std::{thread, time::Duration};
-use rendering::{AdvancedCanvas, Rect};
+use rendering::{AdvancedCanvas, DashboardLayout};
 use crossterm::{terminal, execute, cursor, style::ResetColor};
 
 use std::io::{self};
-use analytics::{AnomalyDetector, AnomalyDetectorConfig, AnomalyStrategy};
+use analytics::{AnomalyDetector, AnomalyDetectorConfig};
 use config::DashboardConfig;
 
 use crate::monitor::SystemMonitor;
-use crate::input::handle_input;
+use crate::input::{handle_input, Action};
 use crate::ui::draw_dashboard;
 use crate::performance::PerformanceMonitor;
 
@@ -26,15 +26,17 @@ async fn main() -> io::Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen, cursor::Hide)?;
     terminal::enable_raw_mode()?;
 
+    // Detect terminal size for dynamic layout
+    let (term_w, term_h) = terminal::size()?;
+    let mut layout = DashboardLayout::from_terminal_size(term_w, term_h);
+
     // Load dashboard configuration
     let config_path = "dashboard_config.json";
     let dashboard_config = match DashboardConfig::load_from_file(config_path) {
         Ok(config) => {
-            println!("Loaded dashboard config: {}", config.name);
             config
         },
         Err(_) => {
-            println!("No dashboard config found, creating default.");
             let default_config = DashboardConfig::default_config();
             default_config.save_to_file(config_path)?;
             default_config
@@ -45,22 +47,16 @@ async fn main() -> io::Result<()> {
     let mut canvas = AdvancedCanvas::new();
     let anomaly_detector = AnomalyDetector::new(
         AnomalyDetectorConfig { threshold_multiplier: 2.0 },
-        AnomalyStrategy::Statistical,
     );
 
     let mut cpu_points: Vec<(f64, f64)> = Vec::new();
     let mut mem_points: Vec<(f64, f64)> = Vec::new();
 
-    let cpu_rect = Rect { x: 0, y: 0, width: 80, height: 20 };
-    let mem_rect = Rect { x: 0, y: 21, width: 80, height: 10 };
-    let network_start_y = 32;
-    let proc_start_y = 38; // Moved down to accommodate new sections
-
     let mut current_cpu_y_val = 0.0; // For smooth animation
     let mut current_mem_y_val = 0.0; // For smooth animation
 
     let mut cpu_history: Vec<f64> = Vec::new();
-    let mut dummy_metric_history: Vec<f64> = Vec::new();
+    let mut mem_history: Vec<f64> = Vec::new();
 
     let mut iteration_count = 0;
     let mut selected_process = 0;
@@ -78,8 +74,12 @@ async fn main() -> io::Result<()> {
             continue;
         }
 
-        if !handle_input(&mut selected_process, &processes, &mut monitor, &mut canvas, proc_start_y, Some(&mut perf_monitor))? {
-            break;
+        match handle_input(&mut selected_process, &processes, &mut monitor, &mut canvas, &layout, Some(&mut perf_monitor))? {
+            Action::Exit => break,
+            Action::Resize(w, h) => {
+                layout = DashboardLayout::from_terminal_size(w, h);
+            }
+            Action::Continue => {}
         }
 
         draw_dashboard(
@@ -89,15 +89,12 @@ async fn main() -> io::Result<()> {
             &mut cpu_points,
             &mut mem_points,
             &mut cpu_history,
-            &mut dummy_metric_history,
+            &mut mem_history,
             &mut iteration_count,
             selected_process,
             &dashboard_config,
             &anomaly_detector,
-            &cpu_rect,
-            &mem_rect,
-            network_start_y,
-            proc_start_y,
+            &layout,
             &mut current_cpu_y_val,
             &mut current_mem_y_val,
             &mut perf_monitor

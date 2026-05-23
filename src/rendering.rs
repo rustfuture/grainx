@@ -8,6 +8,47 @@ pub struct Rect {
     pub height: u16,
 }
 
+/// Dynamic dashboard layout computed from terminal dimensions
+pub struct DashboardLayout {
+    pub term_width: u16,
+    #[allow(dead_code)]
+    pub term_height: u16,
+    pub cpu_rect: Rect,
+    pub mem_rect: Rect,
+    pub network_start_y: u16,
+    pub proc_start_y: u16,
+    pub footer_y: u16,
+}
+
+impl DashboardLayout {
+    pub fn from_terminal_size(width: u16, height: u16) -> Self {
+        let term_width = width.max(60);  // Minimum reasonable width
+        let term_height = height.max(20); // Minimum reasonable height
+        
+        // Proportional layout: CPU graph takes ~35%, Memory ~15%, info ~15%, processes ~35%
+        let cpu_h = ((term_height as f32 * 0.35) as u16).max(8);
+        let mem_h = ((term_height as f32 * 0.15) as u16).max(4);
+        let info_section_h: u16 = 4; // System info + network + cores + disk
+        let _proc_h = term_height.saturating_sub(cpu_h + mem_h + info_section_h + 2).max(3);
+        
+        let cpu_rect = Rect { x: 0, y: 1, width: term_width, height: cpu_h };
+        let mem_rect = Rect { x: 0, y: cpu_h + 2, width: term_width, height: mem_h };
+        let network_start_y = cpu_h + mem_h + 3;
+        let proc_start_y = network_start_y + info_section_h;
+        let footer_y = term_height.saturating_sub(1);
+        
+        DashboardLayout {
+            term_width,
+            term_height,
+            cpu_rect,
+            mem_rect,
+            network_start_y,
+            proc_start_y,
+            footer_y,
+        }
+    }
+}
+
 pub struct AdvancedCanvas {
     stdout: io::Stdout,
 }
@@ -27,22 +68,6 @@ impl AdvancedCanvas {
 
     pub fn draw_str(&mut self, s: &str) -> io::Result<()> {
         self.stdout.write_all(s.as_bytes())
-    }
-
-    pub fn draw_text_in_rect(&mut self, text: &str, rect: &Rect, start_y_offset: u16) -> io::Result<()> {
-        let lines: Vec<&str> = text.lines().collect();
-        for (i, line) in lines.iter().enumerate() {
-            if rect.y + start_y_offset + i as u16 >= rect.y + rect.height {
-                break; // Avoid drawing outside the rect
-            }
-            self.set_cursor(rect.x, rect.y + start_y_offset + i as u16)?;
-            self.draw_str(line)?;
-            // Clear the rest of the line if the text is shorter than the rect width
-            if line.len() < rect.width as usize {
-                self.draw_str(&" ".repeat(rect.width as usize - line.len()))?;
-            }
-        }
-        Ok(())
     }
 
     /// Draw a braille-based graph line for high-resolution

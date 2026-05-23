@@ -8,11 +8,6 @@ pub struct AnomalyDetectorConfig {
     pub threshold_multiplier: f64,
 }
 
-pub enum AnomalyStrategy {
-    Statistical,
-    // Other strategies like ML-based, etc.
-}
-
 pub struct TimeSeriesPoint<T> {
     pub timestamp: DateTime<Utc>,
     pub value: T,
@@ -26,82 +21,99 @@ pub struct Anomaly<T> {
     pub message: String,
 }
 
-#[allow(dead_code)]
+const MAX_HISTORY_SIZE: usize = 100;
+
 /// Anomaly detector for numerical time-series data
 pub struct AnomalyDetector {
-    /// Configuration
     pub config: AnomalyDetectorConfig,
-    
-    /// Detection strategy
-    /// Detection strategy
-    pub strategy: AnomalyStrategy,
-    
-    /// Historical data
-    /// Historical data
-    pub history: Arc<RwLock<VecDeque<TimeSeriesPoint<f64>>>>,
-    
-    /// Detected anomalies
-    /// Detected anomalies
+    history: Arc<RwLock<VecDeque<TimeSeriesPoint<f64>>>>,
+    /// Detected anomalies history
+    #[allow(dead_code)]
     pub anomalies: Arc<RwLock<Vec<Anomaly<f64>>>>,
-    
-    /// Mean of the data
-    pub mean: Arc<RwLock<f64>>,
-    
-    /// Standard deviation of the data
-    pub std_dev: Arc<RwLock<f64>>,
-    
-    /// Last time the model was trained
-    pub last_train_time: Arc<RwLock<Option<DateTime<Utc>>>>,
-    
-    /// Whether the detector is running
-    pub running: Arc<RwLock<bool>>,
+    mean: Arc<RwLock<f64>>,
+    std_dev: Arc<RwLock<f64>>,
+    last_train_time: Arc<RwLock<Option<DateTime<Utc>>>>,
 }
 
 impl AnomalyDetector {
-    pub fn new(config: AnomalyDetectorConfig, strategy: AnomalyStrategy) -> Self {
+    pub fn new(config: AnomalyDetectorConfig) -> Self {
         AnomalyDetector {
             config,
-            strategy,
             history: Arc::new(RwLock::new(VecDeque::new())),
             anomalies: Arc::new(RwLock::new(Vec::new())),
             mean: Arc::new(RwLock::new(0.0)),
             std_dev: Arc::new(RwLock::new(0.0)),
             last_train_time: Arc::new(RwLock::new(None)),
-            running: Arc::new(RwLock::new(false)),
         }
     }
 
-    /// Detect anomalies using statistical methods
+    /// Add a data point to history and update statistics
+    pub fn add_point(&self, value: f64) {
+        let mut history = self.history.write();
+        let point = TimeSeriesPoint {
+            timestamp: Utc::now(),
+            value,
+        };
+        history.push_back(point);
+        
+        // Keep history bounded
+        while history.len() > MAX_HISTORY_SIZE {
+            history.pop_front();
+        }
+
+        // Calculate mean
+        let n = history.len() as f64;
+        if n < 2.0 {
+            return; // Need at least 2 points for meaningful std_dev
+        }
+
+        let sum: f64 = history.iter().map(|p| p.value).sum();
+        let new_mean = sum / n;
+
+        // Calculate standard deviation
+        let variance: f64 = history.iter()
+            .map(|p| {
+                let diff = p.value - new_mean;
+                diff * diff
+            })
+            .sum::<f64>() / n;
+        let new_std_dev = variance.sqrt();
+
+        *self.mean.write() = new_mean;
+        *self.std_dev.write() = new_std_dev;
+        *self.last_train_time.write() = Some(Utc::now());
+    }
+
+    /// Detect anomalies using statistical methods (z-score based)
     pub async fn detect_statistical_anomaly(&self, point: &TimeSeriesPoint<f64>) -> Option<Anomaly<f64>> {
         let mean = *self.mean.read();
         let std_dev = *self.std_dev.read();
         
-        // Calculate threshold based on standard deviation
-        let threshold = self.config.threshold_multiplier * std_dev;
+        // Not enough data to detect anomalies yet
+        if std_dev == 0.0 {
+            return None;
+        }
         
-        // Calculate bounds
-        let lower_bound = mean - threshold;
-        let upper_bound = mean + threshold;
+        // Calculate z-score
+        let z_score = (point.value - mean).abs() / std_dev;
         
-        // Check if value is outside bounds
-        if point.value < lower_bound || point.value > upper_bound {
-            // Calculate severity and create anomaly...
-            let severity = ((point.value - mean).abs() - threshold) / std_dev;
+        // Flag as anomaly if z-score exceeds threshold
+        if z_score > self.config.threshold_multiplier {
+            let lower_bound = mean - self.config.threshold_multiplier * std_dev;
+            let upper_bound = mean + self.config.threshold_multiplier * std_dev;
+            
             Some(Anomaly {
                 timestamp: point.timestamp,
                 value: point.value,
-                severity,
-                message: format!("Anomaly detected: value {} is outside [{}, {}]", point.value, lower_bound, upper_bound),
+                severity: z_score,
+                message: format!(
+                    "Anomaly: {:.1} (z={:.2}) is outside [{:.1}, {:.1}]",
+                    point.value, z_score, lower_bound.max(0.0), upper_bound.min(100.0)
+                ),
             })
         } else {
             None
         }
-    }
-
-    // Placeholder for training the model
-    pub async fn _train_model(&self) {
-        // Implement model training here
-        *self.last_train_time.write() = Some(Utc::now());
     }
 }
 
