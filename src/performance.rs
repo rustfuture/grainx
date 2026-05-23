@@ -93,65 +93,9 @@ impl PerformanceMonitor {
     }
 }
 
-// Memory pool for reducing allocations
-pub struct MemoryPool<T> {
-    pool: Vec<Vec<T>>,
-    capacity: usize,
-}
-
-impl<T> MemoryPool<T> {
-    pub fn new(capacity: usize) -> Self {
-        MemoryPool {
-            pool: Vec::with_capacity(capacity),
-            capacity,
-        }
-    }
-
-    pub fn get(&mut self) -> Vec<T> {
-        self.pool.pop().unwrap_or_else(|| Vec::with_capacity(self.capacity))
-    }
-
-    pub fn return_vec(&mut self, mut vec: Vec<T>) {
-        if self.pool.len() < self.capacity {
-            vec.clear();
-            self.pool.push(vec);
-        }
-    }
-}
-
-// Efficient string formatting cache
-pub struct StringCache {
-    cache: std::collections::HashMap<String, String>,
-    max_size: usize,
-}
-
-impl StringCache {
-    pub fn new(max_size: usize) -> Self {
-        StringCache {
-            cache: std::collections::HashMap::new(),
-            max_size,
-        }
-    }
-
-    pub fn get_or_format<F>(&mut self, key: &str, formatter: F) -> &str
-    where
-        F: FnOnce() -> String,
-    {
-        if !self.cache.contains_key(key) {
-            if self.cache.len() >= self.max_size {
-                self.cache.clear(); // Simple eviction strategy
-            }
-            let formatted = formatter();
-            self.cache.insert(key.to_string(), formatted);
-        }
-        &self.cache[key]
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
 
     #[test]
     fn test_performance_monitor_creation() {
@@ -189,26 +133,4 @@ mod tests {
         assert_ne!(initial, perf.adaptive_refresh);
     }
 
-    #[test]
-    fn test_memory_pool() {
-        let mut pool: MemoryPool<i32> = MemoryPool::new(10);
-        let vec1 = pool.get();
-        assert!(vec1.is_empty());
-        
-        let vec2 = vec![1, 2, 3];
-        pool.return_vec(vec2);
-        
-        let vec3 = pool.get();
-        assert!(vec3.is_empty()); // Should be cleared when returned
-    }
-
-    #[test]
-    fn test_string_cache() {
-        let mut cache = StringCache::new(5);
-        let result1 = cache.get_or_format("test", || "formatted".to_string()).to_string();
-        let result2 = cache.get_or_format("test", || "different".to_string()).to_string();
-        
-        assert_eq!(result1, "formatted");
-        assert_eq!(result2, "formatted"); // Should return cached value
-    }
 }
