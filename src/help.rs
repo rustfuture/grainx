@@ -29,28 +29,34 @@ pub fn show_help(canvas: &mut AdvancedCanvas) -> io::Result<()> {
     
     canvas.set_cursor(0, 9)?;
     canvas.draw_str("  p          - Pause/Resume monitoring")?;
-    
+
+    canvas.set_cursor(0, 10)?;
+    canvas.draw_str("  s          - İstatistikleri CSV/JSON olarak kaydet")?;
+
     canvas.set_cursor(0, 11)?;
+    canvas.draw_str("  a          - Adaptif yenilemeyi aç/kapat")?;
+
+    canvas.set_cursor(0, 13)?;
     canvas.set_color(Color::Green)?;
     canvas.draw_str("Özellikler:")?;
-    
-    canvas.set_cursor(0, 12)?;
+
+    canvas.set_cursor(0, 14)?;
     canvas.set_color(Color::White)?;
     canvas.draw_str("  • Gerçek zamanlı CPU ve Memory grafikleri")?;
-    
-    canvas.set_cursor(0, 13)?;
-    canvas.draw_str("  • Anomali tespiti ve uyarılar")?;
-    
-    canvas.set_cursor(0, 14)?;
-    canvas.draw_str("  • CPU kullanım tahmini")?;
-    
+
     canvas.set_cursor(0, 15)?;
-    canvas.draw_str("  • Korelasyon analizi")?;
-    
+    canvas.draw_str("  • Anomali tespiti ve uyarılar")?;
+
     canvas.set_cursor(0, 16)?;
-    canvas.draw_str("  • Adaptif monitoring (yük bazlı)")?;
-    
+    canvas.draw_str("  • CPU kullanım tahmini")?;
+
+    canvas.set_cursor(0, 17)?;
+    canvas.draw_str("  • Korelasyon analizi")?;
+
     canvas.set_cursor(0, 18)?;
+    canvas.draw_str("  • Adaptif monitoring (yük bazlı)")?;
+
+    canvas.set_cursor(0, 20)?;
     canvas.set_color(Color::Cyan)?;
     canvas.draw_str("Herhangi bir tuşa basarak devam edin...")?;
     

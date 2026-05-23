@@ -11,14 +11,14 @@
 - [x] Sahte korelasyon → gerçek CPU↔Memory korelasyonu
 - [x] 0 warning, clean build
 
-## 🔄 Phase 2: Dinamik Terminal (DEVAM EDİYOR)
+## ✅ Phase 2: Dinamik Terminal (TAMAMLANDI)
 
 - [x] DashboardLayout struct (terminal boyutuna göre layout)
 - [x] handle_input → Action enum (Continue/Exit/Resize)
 - [x] main.rs → terminal::size() + Resize handling
 - [x] ui.rs → DashboardLayout ile dinamik layout
-- [ ] **Testler çalıştırılıp doğrulanacak**
-- [ ] 's' tuşu ile CSV/JSON kaydetme
+- [x] Testler çalıştırılıp doğrulandı (46/46 geçti)
+- [x] 's' tuşu ile CSV/JSON kaydetme (grainx_stats.json + grainx_stats.csv)
 
 ## ⏳ Phase 3: Yeni Özellikler (BEKLİYOR)
 
