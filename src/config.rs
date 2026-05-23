@@ -2,6 +2,18 @@ use serde::{Serialize, Deserialize};
 use std::fs;
 use std::io;
 
+fn default_log_enabled() -> bool {
+    true
+}
+
+fn default_log_path() -> String {
+    "grainx_metrics.log".to_string()
+}
+
+fn default_log_interval_iterations() -> u32 {
+    10
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DashboardConfig {
     pub name: String,
@@ -13,6 +25,12 @@ pub struct DashboardConfig {
     pub show_correlations: bool,
     pub max_processes: usize,
     pub graph_history_size: usize,
+    #[serde(default = "default_log_enabled")]
+    pub log_enabled: bool,
+    #[serde(default = "default_log_path")]
+    pub log_path: String,
+    #[serde(default = "default_log_interval_iterations")]
+    pub log_interval_iterations: u32,
 }
 
 impl DashboardConfig {
@@ -45,6 +63,9 @@ impl DashboardConfig {
             show_correlations: true,
             max_processes: 10,
             graph_history_size: 100,
+            log_enabled: default_log_enabled(),
+            log_path: default_log_path(),
+            log_interval_iterations: default_log_interval_iterations(),
         }
     }
 }
@@ -65,6 +86,9 @@ mod tests {
         assert!(config.graph_history_size > 0);
         assert!(config.show_predictions);
         assert!(config.show_correlations);
+        assert!(config.log_enabled);
+        assert_eq!(config.log_path, "grainx_metrics.log");
+        assert_eq!(config.log_interval_iterations, 10);
     }
 
     #[test]
@@ -73,6 +97,7 @@ mod tests {
         let json = serde_json::to_string_pretty(&config).unwrap();
         assert!(json.contains("grainx_advanced"));
         assert!(json.contains("cpu_warning_threshold"));
+        assert!(json.contains("log_enabled"));
     }
 
     #[test]
@@ -94,6 +119,29 @@ mod tests {
         assert_eq!(config.refresh_interval_ms, 1000);
         assert_eq!(config.cpu_warning_threshold, 75.0);
         assert!(!config.show_correlations);
+        assert!(config.log_enabled);
+        assert_eq!(config.log_path, "grainx_metrics.log");
+        assert_eq!(config.log_interval_iterations, 10);
+    }
+
+    #[test]
+    fn test_config_deserialization_without_log_fields() {
+        let json = r#"{
+            "name": "legacy_config",
+            "layout": ["cpu_graph"],
+            "refresh_interval_ms": 500,
+            "cpu_warning_threshold": 80.0,
+            "memory_warning_threshold": 85.0,
+            "show_predictions": true,
+            "show_correlations": true,
+            "max_processes": 10,
+            "graph_history_size": 100
+        }"#;
+
+        let config: DashboardConfig = serde_json::from_str(json).unwrap();
+        assert!(config.log_enabled);
+        assert_eq!(config.log_path, "grainx_metrics.log");
+        assert_eq!(config.log_interval_iterations, 10);
     }
 
     #[test]
@@ -101,15 +149,13 @@ mod tests {
         let config = DashboardConfig::default_config();
         let test_file = "test_config.json";
         
-        // Test saving
         config.save_to_file(test_file).unwrap();
         
-        // Test loading
         let loaded_config = DashboardConfig::load_from_file(test_file).unwrap();
         assert_eq!(config.name, loaded_config.name);
         assert_eq!(config.refresh_interval_ms, loaded_config.refresh_interval_ms);
+        assert_eq!(config.log_path, loaded_config.log_path);
         
-        // Cleanup
         fs::remove_file(test_file).ok();
     }
 
@@ -117,10 +163,9 @@ mod tests {
     fn test_config_validation() {
         let config = DashboardConfig::default_config();
         
-        // Test reasonable values
         assert!(config.cpu_warning_threshold >= 0.0 && config.cpu_warning_threshold <= 100.0);
         assert!(config.memory_warning_threshold >= 0.0 && config.memory_warning_threshold <= 100.0);
-        assert!(config.refresh_interval_ms >= 100); // At least 100ms
+        assert!(config.refresh_interval_ms >= 100);
         assert!(config.max_processes >= 1 && config.max_processes <= 50);
         assert!(config.graph_history_size >= 10 && config.graph_history_size <= 1000);
     }
