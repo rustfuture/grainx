@@ -2,6 +2,10 @@ use serde::{Serialize, Deserialize};
 use std::fs;
 use std::io;
 
+fn default_color_theme() -> String {
+    "default".to_string()
+}
+
 fn default_log_enabled() -> bool {
     true
 }
@@ -25,6 +29,8 @@ pub struct DashboardConfig {
     pub show_correlations: bool,
     pub max_processes: usize,
     pub graph_history_size: usize,
+    #[serde(default = "default_color_theme")]
+    pub color_theme: String,
     #[serde(default = "default_log_enabled")]
     pub log_enabled: bool,
     #[serde(default = "default_log_path")]
@@ -63,6 +69,7 @@ impl DashboardConfig {
             show_correlations: true,
             max_processes: 10,
             graph_history_size: 100,
+            color_theme: default_color_theme(),
             log_enabled: default_log_enabled(),
             log_path: default_log_path(),
             log_interval_iterations: default_log_interval_iterations(),
@@ -86,6 +93,7 @@ mod tests {
         assert!(config.graph_history_size > 0);
         assert!(config.show_predictions);
         assert!(config.show_correlations);
+        assert_eq!(config.color_theme, "default");
         assert!(config.log_enabled);
         assert_eq!(config.log_path, "grainx_metrics.log");
         assert_eq!(config.log_interval_iterations, 10);
@@ -97,6 +105,7 @@ mod tests {
         let json = serde_json::to_string_pretty(&config).unwrap();
         assert!(json.contains("grainx_advanced"));
         assert!(json.contains("cpu_warning_threshold"));
+        assert!(json.contains("color_theme"));
         assert!(json.contains("log_enabled"));
     }
 
@@ -119,9 +128,29 @@ mod tests {
         assert_eq!(config.refresh_interval_ms, 1000);
         assert_eq!(config.cpu_warning_threshold, 75.0);
         assert!(!config.show_correlations);
+        assert_eq!(config.color_theme, "default");
         assert!(config.log_enabled);
         assert_eq!(config.log_path, "grainx_metrics.log");
         assert_eq!(config.log_interval_iterations, 10);
+    }
+
+    #[test]
+    fn test_config_deserialization_with_color_theme() {
+        let json = r#"{
+            "name": "themed",
+            "layout": ["cpu_graph"],
+            "refresh_interval_ms": 500,
+            "cpu_warning_threshold": 80.0,
+            "memory_warning_threshold": 85.0,
+            "show_predictions": true,
+            "show_correlations": true,
+            "max_processes": 10,
+            "graph_history_size": 100,
+            "color_theme": "dark"
+        }"#;
+
+        let config: DashboardConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.color_theme, "dark");
     }
 
     #[test]
@@ -139,6 +168,7 @@ mod tests {
         }"#;
 
         let config: DashboardConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.color_theme, "default");
         assert!(config.log_enabled);
         assert_eq!(config.log_path, "grainx_metrics.log");
         assert_eq!(config.log_interval_iterations, 10);
@@ -154,6 +184,7 @@ mod tests {
         let loaded_config = DashboardConfig::load_from_file(test_file).unwrap();
         assert_eq!(config.name, loaded_config.name);
         assert_eq!(config.refresh_interval_ms, loaded_config.refresh_interval_ms);
+        assert_eq!(config.color_theme, loaded_config.color_theme);
         assert_eq!(config.log_path, loaded_config.log_path);
         
         fs::remove_file(test_file).ok();

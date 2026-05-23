@@ -1,12 +1,14 @@
 mod rendering;
 mod analytics;
 mod config;
+mod export;
 mod logging;
 mod monitor;
 mod input;
 mod ui;
 mod help;
 mod performance;
+mod theme;
 
 use std::{thread, time::Duration};
 use rendering::{AdvancedCanvas, DashboardLayout};
@@ -21,6 +23,7 @@ use crate::monitor::SystemMonitor;
 use crate::input::{handle_input, Action};
 use crate::ui::draw_dashboard;
 use crate::performance::PerformanceMonitor;
+use crate::theme::palette_for;
 
 
 #[tokio::main]
@@ -28,11 +31,9 @@ async fn main() -> io::Result<()> {
     execute!(io::stdout(), terminal::EnterAlternateScreen, cursor::Hide)?;
     terminal::enable_raw_mode()?;
 
-    // Detect terminal size for dynamic layout
     let (term_w, term_h) = terminal::size()?;
     let mut layout = DashboardLayout::from_terminal_size(term_w, term_h);
 
-    // Load dashboard configuration
     let config_path = "dashboard_config.json";
     let dashboard_config = match DashboardConfig::load_from_file(config_path) {
         Ok(config) => {
@@ -45,6 +46,8 @@ async fn main() -> io::Result<()> {
         }
     };
 
+    let theme_palette = palette_for(&dashboard_config.color_theme);
+
     let mut monitor = SystemMonitor::new();
     let mut canvas = AdvancedCanvas::new();
     let anomaly_detector = AnomalyDetector::new(
@@ -54,15 +57,15 @@ async fn main() -> io::Result<()> {
     let mut cpu_points: Vec<(f64, f64)> = Vec::new();
     let mut mem_points: Vec<(f64, f64)> = Vec::new();
 
-    let mut current_cpu_y_val = 0.0; // For smooth animation
-    let mut current_mem_y_val = 0.0; // For smooth animation
+    let mut current_cpu_y_val = 0.0;
+    let mut current_mem_y_val = 0.0;
 
     let mut cpu_history: Vec<f64> = Vec::new();
     let mut mem_history: Vec<f64> = Vec::new();
 
     let mut iteration_count = 0;
     let mut selected_process = 0;
-    let mut perf_monitor = PerformanceMonitor::new(60.0); // Target 60 FPS
+    let mut perf_monitor = PerformanceMonitor::new(60.0);
     let mut metric_logger = MetricLogger::from_config(&dashboard_config);
 
     loop {
@@ -71,13 +74,12 @@ async fn main() -> io::Result<()> {
         let processes = monitor.get_processes();
         let current_cpu = monitor.last_cpu_usage;
 
-        // Skip frame if system is overloaded
         if perf_monitor.should_skip_frame(current_cpu) {
             thread::sleep(Duration::from_millis(100));
             continue;
         }
 
-        match handle_input(&mut selected_process, &processes, &mut monitor, &mut canvas, &layout, Some(&mut perf_monitor))? {
+        match handle_input(&mut selected_process, &processes, &mut monitor, &mut canvas, &layout, &theme_palette, Some(&mut perf_monitor))? {
             Action::Exit => break,
             Action::Resize(w, h) => {
                 layout = DashboardLayout::from_terminal_size(w, h);
@@ -96,6 +98,7 @@ async fn main() -> io::Result<()> {
             &mut iteration_count,
             selected_process,
             &dashboard_config,
+            &theme_palette,
             &anomaly_detector,
             &layout,
             &mut current_cpu_y_val,
@@ -108,7 +111,6 @@ async fn main() -> io::Result<()> {
         let frame_duration = perf_monitor.end_frame();
         let adaptive_refresh = perf_monitor.calculate_adaptive_refresh(current_cpu);
         
-        // Use adaptive refresh rate
         let sleep_duration = adaptive_refresh.saturating_sub(frame_duration.as_millis() as u64);
         thread::sleep(Duration::from_millis(sleep_duration));
     }
