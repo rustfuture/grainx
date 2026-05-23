@@ -1,8 +1,8 @@
+use crate::error::{GrainxError, Result};
 use crate::export::StatsSnapshot;
 use crate::monitor::SystemMonitor;
 use axum::{Json, Router, extract::State, routing::get};
 use parking_lot::Mutex;
-use std::io;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -36,10 +36,10 @@ pub fn router() -> Router {
         .with_state(state)
 }
 
-pub async fn run(bind: &str, port: u16) -> io::Result<()> {
+pub async fn run(bind: &str, port: u16) -> Result<()> {
     let addr: SocketAddr = format!("{bind}:{port}")
         .parse()
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+        .map_err(|e: std::net::AddrParseError| GrainxError::InvalidBind(e.to_string()))?;
 
     let app = router();
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -49,7 +49,7 @@ pub async fn run(bind: &str, port: u16) -> io::Result<()> {
 
     tokio::select! {
         result = axum::serve(listener, app) => {
-            result.map_err(io::Error::other)?;
+            result.map_err(GrainxError::from)?;
         }
         _ = tokio::signal::ctrl_c() => {
             eprintln!("grainx agent shutting down");
