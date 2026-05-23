@@ -11,14 +11,14 @@
 - [x] Sahte korelasyon → gerçek CPU↔Memory korelasyonu
 - [x] 0 warning, clean build
 
-## ✅ Phase 2: Dinamik Terminal (TAMAMLANDI)
+## 🔄 Phase 2: Dinamik Terminal (DEVAM EDİYOR)
 
 - [x] DashboardLayout struct (terminal boyutuna göre layout)
 - [x] handle_input → Action enum (Continue/Exit/Resize)
 - [x] main.rs → terminal::size() + Resize handling
 - [x] ui.rs → DashboardLayout ile dinamik layout
-- [x] Testler çalıştırılıp doğrulandı (46/46 geçti)
-- [x] 's' tuşu ile CSV/JSON kaydetme (grainx_stats.json + grainx_stats.csv)
+- [ ] **Testler çalıştırılıp doğrulanacak**
+- [ ] 's' tuşu ile CSV/JSON kaydetme
 
 ## ⏳ Phase 3: Yeni Özellikler (BEKLİYOR)
 
@@ -31,6 +31,6 @@
 
 ## 📝 Notlar
 - Proje derleniyor: `cargo check` → **0 warning**
-- Testler: `cargo test` → 43 test (1 timing-sensitive flaky test mevcut)
-- Değişen dosyalar: src/rendering.rs, src/analytics.rs, src/ui.rs, src/main.rs, src/input.rs, src/performance.rs
-- Silinen: src/main_original.rs, grainx/grainx/ (nested copy)
+- Testler: `cargo test` → **63/63 geçti**
+- Orkestrasyon: `orchestration/README.md`
+- Yeni modüller: `src/theme.rs`, `src/logging.rs`, `src/export.rs`
