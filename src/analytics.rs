@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
-use std::collections::VecDeque;
-use std::sync::Arc;
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::collections::VecDeque;
+use std::sync::Arc;
 
 pub struct AnomalyDetectorConfig {
     pub threshold_multiplier: f64,
@@ -55,7 +55,7 @@ impl AnomalyDetector {
             value,
         };
         history.push_back(point);
-        
+
         // Keep history bounded
         while history.len() > MAX_HISTORY_SIZE {
             history.pop_front();
@@ -71,12 +71,14 @@ impl AnomalyDetector {
         let new_mean = sum / n;
 
         // Calculate standard deviation
-        let variance: f64 = history.iter()
+        let variance: f64 = history
+            .iter()
             .map(|p| {
                 let diff = p.value - new_mean;
                 diff * diff
             })
-            .sum::<f64>() / n;
+            .sum::<f64>()
+            / n;
         let new_std_dev = variance.sqrt();
 
         *self.mean.write() = new_mean;
@@ -85,30 +87,36 @@ impl AnomalyDetector {
     }
 
     /// Detect anomalies using statistical methods (z-score based)
-    pub async fn detect_statistical_anomaly(&self, point: &TimeSeriesPoint<f64>) -> Option<Anomaly<f64>> {
+    pub async fn detect_statistical_anomaly(
+        &self,
+        point: &TimeSeriesPoint<f64>,
+    ) -> Option<Anomaly<f64>> {
         let mean = *self.mean.read();
         let std_dev = *self.std_dev.read();
-        
+
         // Not enough data to detect anomalies yet
         if std_dev == 0.0 {
             return None;
         }
-        
+
         // Calculate z-score
         let z_score = (point.value - mean).abs() / std_dev;
-        
+
         // Flag as anomaly if z-score exceeds threshold
         if z_score > self.config.threshold_multiplier {
             let lower_bound = mean - self.config.threshold_multiplier * std_dev;
             let upper_bound = mean + self.config.threshold_multiplier * std_dev;
-            
+
             Some(Anomaly {
                 timestamp: point.timestamp,
                 value: point.value,
                 severity: z_score,
                 message: format!(
                     "Anomaly: {:.1} (z={:.2}) is outside [{:.1}, {:.1}]",
-                    point.value, z_score, lower_bound.max(0.0), upper_bound.min(100.0)
+                    point.value,
+                    z_score,
+                    lower_bound.max(0.0),
+                    upper_bound.min(100.0)
                 ),
             })
         } else {
@@ -152,14 +160,16 @@ pub fn evaluate_metric_formula(formula: &str, metrics: &HashMap<&str, f64>) -> O
 
     // Evaluate the expression (very basic, no operator precedence, just left to right)
     let parts: Vec<&str> = result.split_whitespace().collect();
-    if parts.is_empty() { return None; }
+    if parts.is_empty() {
+        return None;
+    }
 
     let mut current_value = parts[0].parse::<f64>().ok()?;
 
     let mut i = 1;
     while i < parts.len() {
         let operator = parts[i];
-        let operand = parts[i+1].parse::<f64>().ok()?;
+        let operand = parts[i + 1].parse::<f64>().ok()?;
 
         match operator {
             "+" => current_value += operand,

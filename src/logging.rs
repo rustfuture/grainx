@@ -1,4 +1,4 @@
-use crate::monitor::SystemMonitor;
+use crate::metrics::MetricBackend;
 use chrono::Utc;
 use std::fs::OpenOptions;
 use std::io::{self, Write};
@@ -30,7 +30,7 @@ impl MetricLogger {
         if !self.enabled || self.log_interval_iterations == 0 {
             return false;
         }
-        iteration > 0 && iteration as u32 % self.log_interval_iterations == 0
+        iteration > 0 && (iteration as u32).is_multiple_of(self.log_interval_iterations)
     }
 
     pub fn format_log_line(
@@ -47,16 +47,25 @@ impl MetricLogger {
         )
     }
 
-    pub fn maybe_log(&mut self, iteration: i32, monitor: &mut SystemMonitor) -> io::Result<()> {
+    pub fn maybe_log(&mut self, iteration: i32, backend: &mut MetricBackend) -> io::Result<()> {
         if !self.should_log(iteration) {
             return Ok(());
         }
 
-        let cpu_percent = monitor.get_cpu_usage();
-        let (memory_used, memory_total) = monitor.get_memory_usage();
-        let (network_rx, network_tx) = monitor.get_network_io();
+        let metrics = backend.refresh()?;
+        let cpu_percent = metrics.cpu_usage;
+        let memory_used = metrics.memory_used;
+        let memory_total = metrics.memory_total;
+        let network_rx = metrics.network_rx;
+        let network_tx = metrics.network_tx;
 
-        let line = Self::format_log_line(cpu_percent, memory_used, memory_total, network_rx, network_tx);
+        let line = Self::format_log_line(
+            cpu_percent,
+            memory_used,
+            memory_total,
+            network_rx,
+            network_tx,
+        );
 
         let mut file = OpenOptions::new()
             .create(true)
@@ -116,9 +125,9 @@ mod tests {
         fs::remove_file(&path).ok();
 
         let mut logger = MetricLogger::new(true, path.to_string_lossy().to_string(), 1);
-        let mut monitor = SystemMonitor::new();
+        let mut backend = MetricBackend::local();
 
-        logger.maybe_log(1, &mut monitor).unwrap();
+        logger.maybe_log(1, &mut backend).unwrap();
 
         let contents = fs::read_to_string(&path).unwrap();
         let line = contents.lines().next().expect("expected one log line");
@@ -134,9 +143,9 @@ mod tests {
         fs::remove_file(&path).ok();
 
         let mut logger = MetricLogger::new(true, path.to_string_lossy().to_string(), 10);
-        let mut monitor = SystemMonitor::new();
+        let mut backend = MetricBackend::local();
 
-        logger.maybe_log(5, &mut monitor).unwrap();
+        logger.maybe_log(5, &mut backend).unwrap();
         assert!(!path.exists());
 
         fs::remove_file(&path).ok();

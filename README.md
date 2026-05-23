@@ -145,10 +145,26 @@ winget install Rustlang.Rust
 ### Temel Komutlar
 
 ```bash
-cargo run              # İzlemeyi başlat
-cargo test             # Test paketini çalıştır
-cargo bench            # Benchmark'ları çalıştır
-cargo build --release  # Optimize edilmiş binary derle
+cargo run                      # Yerel TUI (monitor, varsayılan)
+cargo run -- monitor             # Açıkça monitor modu
+cargo run -- agent -p 9090       # HTTP metrics agent
+cargo run -- monitor --remote http://127.0.0.1:9090  # Remote TUI
+cargo run -- version             # Sürüm bilgisi
+cargo test                       # Test paketini çalıştır
+cargo clippy -- -D warnings      # Lint kontrolü
+cargo bench                      # Benchmark'ları çalıştır
+cargo build --release            # Optimize edilmiş binary derle
+```
+
+### Agent API
+
+```bash
+# Terminal 1
+grainx agent --bind 127.0.0.1 -p 9090
+
+# Terminal 2
+curl http://127.0.0.1:9090/health
+curl http://127.0.0.1:9090/metrics
 ```
 
 ### Klavye Kontrolleri
@@ -232,12 +248,26 @@ grainx özelleştirme için JSON konfigürasyon dosyası kullanır:
 | `show_correlations` | `bool` | `true` | Korelasyon analizini etkinleştir |
 | `max_processes` | `usize` | `10` | Gösterilecek maksimum process sayısı |
 | `graph_history_size` | `usize` | `100` | Grafiklerdeki veri noktası sayısı |
+| `color_theme` | `string` | `default` | Renk teması: default, dark, light, high_contrast |
+| `log_enabled` | `bool` | `true` | Metrik log dosyasına yazma |
+| `log_path` | `string` | `grainx_metrics.log` | Metrik log dosya yolu |
+
+### Ortam Değişkenleri (config dosyasını geçersiz kılar)
+
+| Değişken | Açıklama |
+|----------|----------|
+| `GRAINX_REFRESH_INTERVAL_MS` | Yenileme aralığı (ms) |
+| `GRAINX_CPU_WARNING_THRESHOLD` | CPU uyarı eşiği (%) |
+| `GRAINX_MEMORY_WARNING_THRESHOLD` | Bellek uyarı eşiği (%) |
+| `GRAINX_COLOR_THEME` | Renk teması adı |
+
+CLI bayrakları config dosyası ve ortam değişkenlerinin üzerinde uygulanır.
 
 ---
 
 ## 🧪 Testler
 
-graintestleri çalıştır
+# Tüm testleri çalıştır
 cargo test
 
 # Belirli modülleri test et
@@ -246,8 +276,6 @@ cargo test performance
 cargo test config
 
 # Integration testlerini çalıştır
-cargo test --test integration_tests
-
 # Benchmark'ları çalıştır
 cargo bench
 ```

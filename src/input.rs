@@ -1,8 +1,8 @@
 use crate::export::StatsSnapshot;
-use crate::monitor::SystemMonitor;
-use crate::rendering::{AdvancedCanvas, DashboardLayout};
 use crate::help::show_help;
+use crate::metrics::MetricBackend;
 use crate::performance::PerformanceMonitor;
+use crate::rendering::{AdvancedCanvas, DashboardLayout};
 use crate::theme::ThemePalette;
 use crossterm::event::{self, Event, KeyCode, poll};
 use std::io;
@@ -15,62 +15,57 @@ pub enum Action {
 }
 
 pub fn handle_input(
-    selected_process: &mut usize, 
-    processes: &Vec<(usize, String, f32, u64)>, 
-    monitor: &mut SystemMonitor, 
-    canvas: &mut AdvancedCanvas, 
+    selected_process: &mut usize,
+    processes: &[(usize, String, f32, u64)],
+    backend: &mut MetricBackend,
+    canvas: &mut AdvancedCanvas,
     layout: &DashboardLayout,
     palette: &ThemePalette,
-    perf_monitor: Option<&mut PerformanceMonitor>
+    perf_monitor: Option<&mut PerformanceMonitor>,
 ) -> io::Result<Action> {
     if poll(Duration::from_millis(50))? {
         match event::read()? {
             Event::Resize(width, height) => {
                 return Ok(Action::Resize(width, height));
             }
-            Event::Key(key_event) => {
-            match key_event.code {
+            Event::Key(key_event) => match key_event.code {
                 KeyCode::Char('q') | KeyCode::Esc => {
                     return Ok(Action::Exit);
                 }
-                KeyCode::Up => {
-                    if *selected_process > 0 {
-                        *selected_process -= 1;
-                    }
+                KeyCode::Up if *selected_process > 0 => {
+                    *selected_process -= 1;
                 }
-                KeyCode::Down => {
-                    if *selected_process < processes.len().saturating_sub(1) {
-                        *selected_process += 1;
-                    }
+                KeyCode::Down if *selected_process < processes.len().saturating_sub(1) => {
+                    *selected_process += 1;
                 }
-                KeyCode::Char('k') => {
-                    if !processes.is_empty() && *selected_process < processes.len() {
-                        let (pid, name, _, _) = &processes[*selected_process];
-                        
-                        canvas.set_cursor(0, layout.proc_start_y + 10)?;
-                        canvas.set_color(palette.critical)?;
-                        canvas.draw_str(&format!("Kill process '{}' (PID: {})? (y/N): ", name, pid))?;
-                        
-                        if let Event::Key(confirm_key) = event::read()? {
-                            if let KeyCode::Char('y') | KeyCode::Char('Y') = confirm_key.code {
-                                if monitor.kill_process(*pid) {
-                                    canvas.set_cursor(0, layout.proc_start_y + 11)?;
-                                    canvas.set_color(palette.ok)?;
-                                    canvas.draw_str(&format!("Process {} killed successfully!", name))?;
-                                } else {
-                                    canvas.set_cursor(0, layout.proc_start_y + 11)?;
-                                    canvas.set_color(palette.critical)?;
-                                    canvas.draw_str(&format!("Failed to kill process {}", name))?;
-                                }
-                            }
+                KeyCode::Char('k')
+                    if !processes.is_empty() && *selected_process < processes.len() =>
+                {
+                    let (pid, name, _, _) = &processes[*selected_process];
+
+                    canvas.set_cursor(0, layout.proc_start_y + 10)?;
+                    canvas.set_color(palette.critical)?;
+                    canvas.draw_str(&format!("Kill process '{}' (PID: {})? (y/N): ", name, pid))?;
+
+                    if let Event::Key(confirm_key) = event::read()?
+                        && let KeyCode::Char('y') | KeyCode::Char('Y') = confirm_key.code
+                    {
+                        if backend.kill_process(*pid) {
+                            canvas.set_cursor(0, layout.proc_start_y + 11)?;
+                            canvas.set_color(palette.ok)?;
+                            canvas.draw_str(&format!("Process {} killed successfully!", name))?;
+                        } else {
+                            canvas.set_cursor(0, layout.proc_start_y + 11)?;
+                            canvas.set_color(palette.critical)?;
+                            canvas.draw_str(&format!("Failed to kill process {}", name))?;
                         }
-                        
-                        std::thread::sleep(Duration::from_secs(2));
-                        canvas.set_cursor(0, layout.proc_start_y + 10)?;
-                        canvas.draw_str(&" ".repeat(layout.term_width as usize))?;
-                        canvas.set_cursor(0, layout.proc_start_y + 11)?;
-                        canvas.draw_str(&" ".repeat(layout.term_width as usize))?;
                     }
+
+                    std::thread::sleep(Duration::from_secs(2));
+                    canvas.set_cursor(0, layout.proc_start_y + 10)?;
+                    canvas.draw_str(&" ".repeat(layout.term_width as usize))?;
+                    canvas.set_cursor(0, layout.proc_start_y + 11)?;
+                    canvas.draw_str(&" ".repeat(layout.term_width as usize))?;
                 }
                 KeyCode::Char('r') => {
                     canvas.set_cursor(0, 0)?;
@@ -92,7 +87,7 @@ pub fn handle_input(
                     const CSV_PATH: &str = "grainx_stats.csv";
 
                     canvas.set_cursor(0, 0)?;
-                    match StatsSnapshot::save_both(JSON_PATH, CSV_PATH, monitor) {
+                    match StatsSnapshot::save_both(JSON_PATH, CSV_PATH, backend) {
                         Ok(()) => {
                             canvas.set_color(palette.ok)?;
                             canvas.draw_str(&format!(
@@ -115,8 +110,7 @@ pub fn handle_input(
                     }
                 }
                 _ => {}
-            }
-        }
+            },
             _ => {}
         }
     }
