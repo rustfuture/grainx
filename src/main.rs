@@ -1,6 +1,7 @@
 mod rendering;
 mod analytics;
 mod config;
+mod logging;
 mod monitor;
 mod input;
 mod ui;
@@ -14,6 +15,7 @@ use crossterm::{terminal, execute, cursor, style::ResetColor};
 use std::io::{self};
 use analytics::{AnomalyDetector, AnomalyDetectorConfig};
 use config::DashboardConfig;
+use logging::MetricLogger;
 
 use crate::monitor::SystemMonitor;
 use crate::input::{handle_input, Action};
@@ -61,6 +63,7 @@ async fn main() -> io::Result<()> {
     let mut iteration_count = 0;
     let mut selected_process = 0;
     let mut perf_monitor = PerformanceMonitor::new(60.0); // Target 60 FPS
+    let mut metric_logger = MetricLogger::from_config(&dashboard_config);
 
     loop {
         perf_monitor.start_frame();
