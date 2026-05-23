@@ -1,122 +1,43 @@
-mod rendering;
+mod agent;
 mod analytics;
+mod cli;
 mod config;
 mod export;
-mod logging;
-mod monitor;
-mod input;
-mod ui;
 mod help;
+mod input;
+mod logging;
+mod metrics;
+mod monitor;
+mod network;
 mod performance;
+mod rendering;
 mod theme;
+mod tui;
+mod ui;
 
-use std::{thread, time::Duration};
-use rendering::{AdvancedCanvas, DashboardLayout};
-use crossterm::{terminal, execute, cursor, style::ResetColor};
+use clap::Parser;
+use std::io;
+use std::process;
 
-use std::io::{self};
-use analytics::{AnomalyDetector, AnomalyDetectorConfig};
-use config::DashboardConfig;
-use logging::MetricLogger;
-
-use crate::monitor::SystemMonitor;
-use crate::input::{handle_input, Action};
-use crate::ui::draw_dashboard;
-use crate::performance::PerformanceMonitor;
-use crate::theme::palette_for;
-
+async fn run() -> io::Result<()> {
+    match cli::Cli::parse().resolved_command() {
+        cli::Commands::Monitor(args) => tui::run(args).await,
+        cli::Commands::Agent { bind, port } => agent::run(&bind, port).await,
+        cli::Commands::Version => {
+            println!("grainx {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
+    }
+}
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
-    execute!(io::stdout(), terminal::EnterAlternateScreen, cursor::Hide)?;
-    terminal::enable_raw_mode()?;
-
-    let (term_w, term_h) = terminal::size()?;
-    let mut layout = DashboardLayout::from_terminal_size(term_w, term_h);
-
-    let config_path = "dashboard_config.json";
-    let dashboard_config = match DashboardConfig::load_from_file(config_path) {
-        Ok(config) => {
-            config
-        },
-        Err(_) => {
-            let default_config = DashboardConfig::default_config();
-            default_config.save_to_file(config_path)?;
-            default_config
+async fn main() {
+    let exit_code = match run().await {
+        Ok(()) => 0,
+        Err(err) => {
+            eprintln!("Error: {err}");
+            1
         }
     };
-
-    let theme_palette = palette_for(&dashboard_config.color_theme);
-
-    let mut monitor = SystemMonitor::new();
-    let mut canvas = AdvancedCanvas::new();
-    let anomaly_detector = AnomalyDetector::new(
-        AnomalyDetectorConfig { threshold_multiplier: 2.0 },
-    );
-
-    let mut cpu_points: Vec<(f64, f64)> = Vec::new();
-    let mut mem_points: Vec<(f64, f64)> = Vec::new();
-
-    let mut current_cpu_y_val = 0.0;
-    let mut current_mem_y_val = 0.0;
-
-    let mut cpu_history: Vec<f64> = Vec::new();
-    let mut mem_history: Vec<f64> = Vec::new();
-
-    let mut iteration_count = 0;
-    let mut selected_process = 0;
-    let mut perf_monitor = PerformanceMonitor::new(60.0);
-    let mut metric_logger = MetricLogger::from_config(&dashboard_config);
-
-    loop {
-        perf_monitor.start_frame();
-        
-        let processes = monitor.get_processes();
-        let current_cpu = monitor.last_cpu_usage;
-
-        if perf_monitor.should_skip_frame(current_cpu) {
-            thread::sleep(Duration::from_millis(100));
-            continue;
-        }
-
-        match handle_input(&mut selected_process, &processes, &mut monitor, &mut canvas, &layout, &theme_palette, Some(&mut perf_monitor))? {
-            Action::Exit => break,
-            Action::Resize(w, h) => {
-                layout = DashboardLayout::from_terminal_size(w, h);
-            }
-            Action::Continue => {}
-        }
-
-        draw_dashboard(
-            &mut canvas,
-            &mut monitor,
-            &processes,
-            &mut cpu_points,
-            &mut mem_points,
-            &mut cpu_history,
-            &mut mem_history,
-            &mut iteration_count,
-            selected_process,
-            &dashboard_config,
-            &theme_palette,
-            &anomaly_detector,
-            &layout,
-            &mut current_cpu_y_val,
-            &mut current_mem_y_val,
-            &mut perf_monitor
-        ).await?;
-
-        metric_logger.maybe_log(iteration_count, &mut monitor)?;
-
-        let frame_duration = perf_monitor.end_frame();
-        let adaptive_refresh = perf_monitor.calculate_adaptive_refresh(current_cpu);
-        
-        let sleep_duration = adaptive_refresh.saturating_sub(frame_duration.as_millis() as u64);
-        thread::sleep(Duration::from_millis(sleep_duration));
-    }
-
-    terminal::disable_raw_mode()?;
-    execute!(io::stdout(), terminal::LeaveAlternateScreen, cursor::Show, ResetColor)?;
-
-    Ok(())
+    process::exit(exit_code);
 }

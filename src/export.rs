@@ -39,50 +39,54 @@ pub struct StatsSnapshot {
 
 impl StatsSnapshot {
     pub fn capture(monitor: &mut SystemMonitor) -> Self {
-        let cpu_usage = monitor.get_cpu_usage();
-        let (used_memory, total_memory) = monitor.get_memory_usage();
-        let memory_percentage = if total_memory > 0 {
-            (used_memory as f64 / total_memory as f64) * 100.0
+        let metrics = monitor.refresh();
+        Self::from_system_metrics(metrics)
+    }
+
+    pub fn capture_backend(backend: &mut crate::metrics::MetricBackend) -> io::Result<Self> {
+        let metrics = backend.refresh()?;
+        Ok(Self::from_system_metrics(&metrics))
+    }
+
+    fn from_system_metrics(metrics: &crate::monitor::SystemMetrics) -> Self {
+        let memory_percentage = if metrics.memory_total > 0 {
+            (metrics.memory_used as f64 / metrics.memory_total as f64) * 100.0
         } else {
             0.0
         };
-        let (rx_bytes, tx_bytes) = monitor.get_network_io();
-        let cpu_cores = monitor.get_cpu_cores();
-        let disk_info = monitor.get_disk_usage();
-        let (os_name, kernel_version, uptime) = monitor.get_system_info();
-        let processes = monitor
-            .get_processes()
-            .into_iter()
-            .map(|(pid, name, cpu_usage, memory_bytes)| ProcessInfo {
-                pid,
-                name,
-                cpu_usage,
-                memory_bytes,
-            })
-            .collect();
 
         StatsSnapshot {
             timestamp: Utc::now(),
-            cpu_usage_percent: cpu_usage,
-            memory_used_bytes: used_memory,
-            memory_total_bytes: total_memory,
+            cpu_usage_percent: metrics.cpu_usage,
+            memory_used_bytes: metrics.memory_used,
+            memory_total_bytes: metrics.memory_total,
             memory_usage_percent: memory_percentage,
-            network_rx_bytes: rx_bytes,
-            network_tx_bytes: tx_bytes,
-            cpu_cores,
-            disks: disk_info
-                .into_iter()
+            network_rx_bytes: metrics.network_rx,
+            network_tx_bytes: metrics.network_tx,
+            cpu_cores: metrics.cpu_cores.clone(),
+            disks: metrics
+                .disks
+                .iter()
                 .map(|(name, total, available, used_percent)| DiskInfo {
-                    name,
-                    total_bytes: total,
-                    available_bytes: available,
-                    used_percent,
+                    name: name.clone(),
+                    total_bytes: *total,
+                    available_bytes: *available,
+                    used_percent: *used_percent,
                 })
                 .collect(),
-            os_name,
-            kernel_version,
-            uptime_seconds: uptime,
-            processes,
+            os_name: metrics.os_name.clone(),
+            kernel_version: metrics.kernel_version.clone(),
+            uptime_seconds: metrics.uptime_seconds,
+            processes: metrics
+                .processes
+                .iter()
+                .map(|(pid, name, cpu_usage, memory_bytes)| ProcessInfo {
+                    pid: *pid,
+                    name: name.clone(),
+                    cpu_usage: *cpu_usage,
+                    memory_bytes: *memory_bytes,
+                })
+                .collect(),
         }
     }
 
@@ -94,15 +98,15 @@ impl StatsSnapshot {
     pub fn save_csv(&self, path: &str) -> io::Result<()> {
         let mut lines = Vec::new();
         lines.push("section,field,value".to_string());
-        lines.push(format!(
-            "system,timestamp,{}",
-            self.timestamp.to_rfc3339()
-        ));
+        lines.push(format!("system,timestamp,{}", self.timestamp.to_rfc3339()));
         lines.push(format!(
             "system,cpu_usage_percent,{:.2}",
             self.cpu_usage_percent
         ));
-        lines.push(format!("system,memory_used_bytes,{}", self.memory_used_bytes));
+        lines.push(format!(
+            "system,memory_used_bytes,{}",
+            self.memory_used_bytes
+        ));
         lines.push(format!(
             "system,memory_total_bytes,{}",
             self.memory_total_bytes
@@ -118,10 +122,7 @@ impl StatsSnapshot {
             "system,kernel_version,{}",
             csv_escape(&self.kernel_version)
         ));
-        lines.push(format!(
-            "system,uptime_seconds,{}",
-            self.uptime_seconds
-        ));
+        lines.push(format!("system,uptime_seconds,{}", self.uptime_seconds));
         lines.push(format!(
             "system,cpu_cores,{}",
             csv_escape(
@@ -159,9 +160,9 @@ impl StatsSnapshot {
     pub fn save_both(
         json_path: &str,
         csv_path: &str,
-        monitor: &mut SystemMonitor,
+        backend: &mut crate::metrics::MetricBackend,
     ) -> io::Result<()> {
-        let snapshot = Self::capture(monitor);
+        let snapshot = Self::capture_backend(backend)?;
         snapshot.save_json(json_path)?;
         snapshot.save_csv(csv_path)?;
         Ok(())
