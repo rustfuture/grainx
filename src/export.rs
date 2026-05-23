@@ -1,3 +1,4 @@
+use crate::error::Result;
 use crate::monitor::SystemMonitor;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -43,7 +44,7 @@ impl StatsSnapshot {
         Self::from_system_metrics(metrics)
     }
 
-    pub fn capture_backend(backend: &mut crate::metrics::MetricBackend) -> io::Result<Self> {
+    pub fn capture_backend(backend: &mut crate::metrics::MetricBackend) -> Result<Self> {
         let metrics = backend.refresh()?;
         Ok(Self::from_system_metrics(&metrics))
     }
@@ -161,7 +162,7 @@ impl StatsSnapshot {
         json_path: &str,
         csv_path: &str,
         backend: &mut crate::metrics::MetricBackend,
-    ) -> io::Result<()> {
+    ) -> Result<()> {
         let snapshot = Self::capture_backend(backend)?;
         snapshot.save_json(json_path)?;
         snapshot.save_csv(csv_path)?;

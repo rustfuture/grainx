@@ -1,25 +1,23 @@
 use crate::analytics::{AnomalyDetector, AnomalyDetectorConfig};
 use crate::cli::MonitorArgs;
 use crate::config::{ConfigOverrides, DashboardConfig};
+use crate::error::{GrainxError, Result};
 use crate::input::{Action, handle_input};
 use crate::logging::MetricLogger;
 use crate::metrics::MetricBackend;
 use crate::performance::PerformanceMonitor;
 use crate::rendering::{AdvancedCanvas, DashboardLayout};
 use crate::theme::palette_for;
-use crate::ui::draw_dashboard;
+use crate::ui::{DashboardState, DrawContext, draw_dashboard};
 use crossterm::{cursor, execute, style::ResetColor, terminal};
 use std::io::{self, IsTerminal};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{thread, time::Duration};
 
-pub async fn run(args: MonitorArgs) -> io::Result<()> {
+pub async fn run(args: MonitorArgs) -> Result<()> {
     if !io::stdout().is_terminal() {
-        return Err(io::Error::new(
-            io::ErrorKind::NotConnected,
-            "grainx monitor requires an interactive terminal. Use: grainx agent",
-        ));
+        return Err(GrainxError::NoTty);
     }
 
     execute!(io::stdout(), terminal::EnterAlternateScreen, cursor::Hide)?;
@@ -46,7 +44,7 @@ pub async fn run(args: MonitorArgs) -> io::Result<()> {
     result
 }
 
-async fn run_loop(args: MonitorArgs, shutdown: Arc<AtomicBool>) -> io::Result<()> {
+async fn run_loop(args: MonitorArgs, shutdown: Arc<AtomicBool>) -> Result<()> {
     let (term_w, term_h) = terminal::size()?;
     let mut layout = DashboardLayout::from_terminal_size(term_w, term_h);
 
@@ -66,23 +64,8 @@ async fn run_loop(args: MonitorArgs, shutdown: Arc<AtomicBool>) -> io::Result<()
     let anomaly_detector = AnomalyDetector::new(AnomalyDetectorConfig {
         threshold_multiplier: 2.0,
     });
+    let mut state = DashboardState::default();
 
-    let mut cpu_points: Vec<(f64, f64)> = Vec::new();
-    let mut mem_points: Vec<(f64, f64)> = Vec::new();
-    let mut net_rx_points: Vec<(f64, f64)> = Vec::new();
-    let mut net_tx_points: Vec<(f64, f64)> = Vec::new();
-
-    let mut current_cpu_y_val = 0.0;
-    let mut current_mem_y_val = 0.0;
-    let mut current_net_rx_y = 0.0;
-    let mut current_net_tx_y = 0.0;
-
-    let mut cpu_history: Vec<f64> = Vec::new();
-    let mut mem_history: Vec<f64> = Vec::new();
-    let mut last_rx_bytes: u64 = 0;
-    let mut last_tx_bytes: u64 = 0;
-
-    let mut iteration_count = 0;
     let mut selected_process = 0;
     let mut perf_monitor = PerformanceMonitor::new(60.0);
     let mut metric_logger = MetricLogger::from_config(&dashboard_config);
@@ -116,31 +99,21 @@ async fn run_loop(args: MonitorArgs, shutdown: Arc<AtomicBool>) -> io::Result<()
 
         draw_dashboard(
             &mut canvas,
-            &mut backend,
-            &processes,
-            &mut cpu_points,
-            &mut mem_points,
-            &mut net_rx_points,
-            &mut net_tx_points,
-            &mut cpu_history,
-            &mut mem_history,
-            &mut last_rx_bytes,
-            &mut last_tx_bytes,
-            &mut iteration_count,
-            selected_process,
-            &dashboard_config,
-            &theme_palette,
-            &anomaly_detector,
-            &layout,
-            &mut current_cpu_y_val,
-            &mut current_mem_y_val,
-            &mut current_net_rx_y,
-            &mut current_net_tx_y,
-            &mut perf_monitor,
+            &mut state,
+            DrawContext {
+                backend: &mut backend,
+                processes: &processes,
+                config: &dashboard_config,
+                palette: &theme_palette,
+                anomaly_detector: &anomaly_detector,
+                layout: &layout,
+                selected_process,
+                perf_monitor: &mut perf_monitor,
+            },
         )
         .await?;
 
-        metric_logger.maybe_log(iteration_count, &mut backend)?;
+        metric_logger.maybe_log(state.iteration_count, &mut backend)?;
 
         let frame_duration = perf_monitor.end_frame();
         let base_refresh = dashboard_config.refresh_interval_ms;

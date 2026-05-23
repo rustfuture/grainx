@@ -1,7 +1,8 @@
+use crate::error::Result;
 use crate::metrics::MetricBackend;
 use chrono::Utc;
 use std::fs::OpenOptions;
-use std::io::{self, Write};
+use std::io::Write;
 
 pub struct MetricLogger {
     enabled: bool,
@@ -47,7 +48,7 @@ impl MetricLogger {
         )
     }
 
-    pub fn maybe_log(&mut self, iteration: i32, backend: &mut MetricBackend) -> io::Result<()> {
+    pub fn maybe_log(&mut self, iteration: i32, backend: &mut MetricBackend) -> Result<()> {
         if !self.should_log(iteration) {
             return Ok(());
         }
