@@ -2,7 +2,10 @@
 target/
 Cargo.lock
 
-# IDE
+# IDE / Cursor (local only — do not commit skills)
+.cursor/skills/
+.agents/
+skills-lock.json
 .vscode/
 .idea/
 *.swp
@@ -14,7 +17,6 @@ Thumbs.db
 
 # Logs
 *.log
-grainx_metrics.log
 
 # Test artifacts
 test_config.json

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "cargo check --message-format=short 2>&1 | head -40"
+      }
+    ]
+  }
+}

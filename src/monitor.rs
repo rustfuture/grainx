@@ -1,17 +1,43 @@
-use sysinfo::{System, Networks, Pid, Disks};
 use std::collections::VecDeque;
-use std::thread;
-use std::time::Duration;
+
+use sysinfo::{Disks, Networks, Pid, System};
+
+const MAX_ALERTS: usize = 5;
+
+#[derive(Debug, Clone)]
+pub struct SystemMetrics {
+    pub cpu_usage: f32,
+    pub memory_used: u64,
+    pub memory_total: u64,
+    pub network_rx: u64,
+    pub network_tx: u64,
+    pub cpu_cores: Vec<f32>,
+    pub disks: Vec<(String, u64, u64, f64)>,
+    pub os_name: String,
+    pub kernel_version: String,
+    pub uptime_seconds: u64,
+    pub processes: Vec<(usize, String, f32, u64)>,
+}
 
 pub struct SystemMonitor {
-    pub sys: System,
-    pub networks: Networks,
-    pub disks: Disks,
+    sys: System,
+    networks: Networks,
+    disks: Disks,
     pub last_cpu_usage: f32,
-    pub high_cpu_duration: u32, // Counter for consecutive high CPU readings
-    pub cpu_state_history: VecDeque<bool>, // true for high CPU, false for low
-    pub user_cpu_threshold: f32, // User-learned CPU threshold
-    pub high_cpu_count: u32, // Counter for how many times CPU exceeds user_cpu_threshold
+    high_cpu_duration: u32,
+    cpu_state_history: VecDeque<bool>,
+    user_cpu_threshold: f32,
+    high_cpu_count: u32,
+    pending_alerts: Vec<String>,
+    os_name: String,
+    kernel_version: String,
+    last_metrics: Option<SystemMetrics>,
+}
+
+impl Default for SystemMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SystemMonitor {
@@ -23,115 +49,41 @@ impl SystemMonitor {
             last_cpu_usage: 0.0,
             high_cpu_duration: 0,
             cpu_state_history: VecDeque::with_capacity(5),
-            user_cpu_threshold: 75.0, // Initial threshold
+            user_cpu_threshold: 75.0,
             high_cpu_count: 0,
+            pending_alerts: Vec::new(),
+            os_name: System::name().unwrap_or_else(|| "Unknown".to_string()),
+            kernel_version: System::kernel_version().unwrap_or_else(|| "Unknown".to_string()),
+            last_metrics: None,
         }
     }
 
-    pub fn get_cpu_usage(&mut self) -> f32 {
+    pub fn refresh(&mut self) -> &SystemMetrics {
         self.sys.refresh_cpu();
-        thread::sleep(Duration::from_millis(200)); // Initial wait for CPU usage to be calculated
-        self.sys.refresh_cpu();
-        let current_cpu_usage = self.sys.global_cpu_info().cpu_usage();
-
-        // Adaptive sampling logic
-        let sampling_interval_ms = if current_cpu_usage > 80.0 {
-            100 // High CPU, sample more frequently
-        } else if current_cpu_usage > 50.0 {
-            200 // Medium CPU
-        } else {
-            500 // Low CPU, sample less frequently
-        };
-        thread::sleep(Duration::from_millis(sampling_interval_ms));
-
-        // Bottleneck identification logic
-        if current_cpu_usage > 90.0 {
-            self.high_cpu_duration += 1;
-            if self.high_cpu_duration >= 5 { // If high CPU for 5 consecutive readings
-                println!("\nWARNING: Sustained high CPU usage detected! Potential CPU bottleneck.\n");
-            }
-        } else {
-            self.high_cpu_duration = 0;
-        }
-
-        // Behavioral pattern recognition
-        let is_high_cpu = current_cpu_usage > 70.0; // Define a threshold for "high"
-        self.cpu_state_history.push_back(is_high_cpu);
-        if self.cpu_state_history.len() > 5 { // Keep history size limited
-            self.cpu_state_history.pop_front();
-        }
-
-        // Check for a simple fluctuation pattern: High -> Low -> High
-        if self.cpu_state_history.len() == 3 && 
-           self.cpu_state_history[0] == true && 
-           self.cpu_state_history[1] == false && 
-           self.cpu_state_history[2] == true {
-            println!("\nPATTERN DETECTED: CPU usage fluctuating (High-Low-High)!\n");
-            // Clear history to avoid repeated detection of the same pattern
-            self.cpu_state_history.clear();
-        }
-
-        // User behavior learning for personalized monitoring
-        if current_cpu_usage > self.user_cpu_threshold {
-            self.high_cpu_count += 1;
-            if self.high_cpu_count >= 10 { // If CPU exceeds user threshold 10 times
-                self.user_cpu_threshold += 5.0; // Increase threshold
-                println!("\nUSER BEHAVIOR LEARNED: Increased user CPU threshold to {:.1}%\n", self.user_cpu_threshold);
-                self.high_cpu_count = 0; // Reset counter
-            }
-        } else {
-            self.high_cpu_count = 0; // Reset if CPU drops below threshold
-        }
-
-        self.last_cpu_usage = current_cpu_usage;
-        current_cpu_usage
-    }
-
-    pub fn get_memory_usage(&mut self) -> (u64, u64) {
         self.sys.refresh_memory();
-        (self.sys.used_memory(), self.sys.total_memory())
-    }
-
-    pub fn get_processes(&mut self) -> Vec<(usize, String, f32, u64)> {
         self.sys.refresh_processes();
-        let mut processes: Vec<(usize, String, f32, u64)> = self.sys.processes()
-            .iter()
-            .map(|(pid, p)| (pid.as_u32() as usize, p.name().to_string(), p.cpu_usage(), p.memory()))
-            .collect();
-        processes.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
-        processes.truncate(10); // Top 10 processes (will be limited by config in UI)
-        processes
-    }
-
-    pub fn kill_process(&mut self, pid: usize) -> bool {
-        if let Some(process) = self.sys.process(Pid::from(pid)) {
-            process.kill()
-        } else {
-            false
-        }
-    }
-
-    pub fn get_network_io(&mut self) -> (u64, u64) {
         self.networks.refresh();
-        let mut received_bytes = 0;
-        let mut transmitted_bytes = 0;
-        for (_interface_name, data) in self.networks.iter() {
-            received_bytes += data.received();
-            transmitted_bytes += data.transmitted();
-        }
-        (received_bytes, transmitted_bytes)
-    }
-
-    pub fn get_cpu_cores(&mut self) -> Vec<f32> {
-        self.sys.refresh_cpu();
-        thread::sleep(Duration::from_millis(200));
-        self.sys.refresh_cpu();
-        self.sys.cpus().iter().map(|cpu| cpu.cpu_usage()).collect()
-    }
-
-    pub fn get_disk_usage(&mut self) -> Vec<(String, u64, u64, f64)> {
         self.disks.refresh();
-        self.disks.iter()
+
+        let cpu_usage = self.sys.global_cpu_info().cpu_usage();
+        self.last_cpu_usage = cpu_usage;
+        self.update_alerts(cpu_usage);
+
+        let memory_used = self.sys.used_memory();
+        let memory_total = self.sys.total_memory();
+
+        let mut network_rx = 0;
+        let mut network_tx = 0;
+        for (_name, data) in self.networks.iter() {
+            network_rx += data.received();
+            network_tx += data.transmitted();
+        }
+
+        let cpu_cores = self.sys.cpus().iter().map(|cpu| cpu.cpu_usage()).collect();
+
+        let disks = self
+            .disks
+            .iter()
             .map(|disk| {
                 let name = disk.name().to_string_lossy().to_string();
                 let total = disk.total_space();
@@ -143,15 +95,135 @@ impl SystemMonitor {
                 };
                 (name, total, available, used_percentage)
             })
-            .collect()
+            .collect();
+
+        let mut processes: Vec<(usize, String, f32, u64)> = self
+            .sys
+            .processes()
+            .iter()
+            .map(|(pid, p)| {
+                (
+                    pid.as_u32() as usize,
+                    p.name().to_string(),
+                    p.cpu_usage(),
+                    p.memory(),
+                )
+            })
+            .collect();
+        processes.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+        processes.truncate(10);
+
+        let metrics = SystemMetrics {
+            cpu_usage,
+            memory_used,
+            memory_total,
+            network_rx,
+            network_tx,
+            cpu_cores,
+            disks,
+            os_name: self.os_name.clone(),
+            kernel_version: self.kernel_version.clone(),
+            uptime_seconds: System::uptime(),
+            processes,
+        };
+
+        self.last_metrics = Some(metrics);
+        self.last_metrics.as_ref().expect("metrics just set")
     }
 
-    pub fn get_system_info(&mut self) -> (String, String, u64) {
-        self.sys.refresh_all();
-        let os_name = System::name().unwrap_or_else(|| "Unknown".to_string());
-        let kernel_version = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
-        let uptime = System::uptime();
-        (os_name, kernel_version, uptime)
+    pub fn take_alerts(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.pending_alerts)
+    }
+
+    fn push_alert(&mut self, message: impl Into<String>) {
+        let message = message.into();
+        if self.pending_alerts.iter().any(|a| a == &message) {
+            return;
+        }
+        if self.pending_alerts.len() >= MAX_ALERTS {
+            self.pending_alerts.remove(0);
+        }
+        self.pending_alerts.push(message);
+    }
+
+    fn update_alerts(&mut self, current_cpu_usage: f32) {
+        if current_cpu_usage > 90.0 {
+            self.high_cpu_duration += 1;
+            if self.high_cpu_duration == 5 {
+                self.push_alert(
+                    "WARNING: Sustained high CPU usage detected! Potential CPU bottleneck.",
+                );
+            }
+        } else {
+            self.high_cpu_duration = 0;
+        }
+
+        let is_high_cpu = current_cpu_usage > 70.0;
+        self.cpu_state_history.push_back(is_high_cpu);
+        if self.cpu_state_history.len() > 5 {
+            self.cpu_state_history.pop_front();
+        }
+
+        if self.cpu_state_history.len() == 3
+            && self.cpu_state_history[0]
+            && !self.cpu_state_history[1]
+            && self.cpu_state_history[2]
+        {
+            self.push_alert("PATTERN: CPU usage fluctuating (High-Low-High).");
+            self.cpu_state_history.clear();
+        }
+
+        if current_cpu_usage > self.user_cpu_threshold {
+            self.high_cpu_count += 1;
+            if self.high_cpu_count == 10 {
+                self.user_cpu_threshold += 5.0;
+                self.push_alert(format!(
+                    "LEARNED: Increased user CPU threshold to {:.1}%.",
+                    self.user_cpu_threshold
+                ));
+                self.high_cpu_count = 0;
+            }
+        } else {
+            self.high_cpu_count = 0;
+        }
+    }
+
+    pub fn kill_process(&mut self, pid: usize) -> bool {
+        if let Some(process) = self.sys.process(Pid::from(pid)) {
+            process.kill()
+        } else {
+            false
+        }
+    }
+
+    pub fn get_processes(&mut self) -> Vec<(usize, String, f32, u64)> {
+        self.refresh().processes.clone()
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn refresh_is_fast_without_blocking_sleeps() {
+        let mut monitor = SystemMonitor::new();
+        let start = std::time::Instant::now();
+        let _ = monitor.refresh();
+        assert!(
+            start.elapsed().as_millis() < 200,
+            "refresh took {}ms, expected <200ms",
+            start.elapsed().as_millis()
+        );
+    }
+
+    #[test]
+    fn alerts_queue_instead_of_printing() {
+        let mut monitor = SystemMonitor::new();
+        for _ in 0..5 {
+            monitor.update_alerts(95.0);
+        }
+        let alerts = monitor.take_alerts();
+        assert!(alerts.iter().any(|a| a.contains("Sustained high CPU")));
+    }
+}

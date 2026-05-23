@@ -1,5 +1,6 @@
 use crossterm::style::Color;
 use serde::Deserialize;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -10,14 +11,16 @@ pub enum ColorTheme {
     HighContrast,
 }
 
-impl ColorTheme {
-    pub fn from_str(name: &str) -> Self {
-        match name.to_ascii_lowercase().as_str() {
+impl FromStr for ColorTheme {
+    type Err = std::convert::Infallible;
+
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        Ok(match name.to_ascii_lowercase().as_str() {
             "dark" => ColorTheme::Dark,
             "light" => ColorTheme::Light,
             "high_contrast" | "high-contrast" => ColorTheme::HighContrast,
             _ => ColorTheme::Default,
-        }
+        })
     }
 }
 
@@ -88,7 +91,7 @@ impl ThemePalette {
 }
 
 pub fn palette_for(theme: &str) -> ThemePalette {
-    match ColorTheme::from_str(theme) {
+    match theme.parse().unwrap_or(ColorTheme::Default) {
         ColorTheme::Default => ThemePalette::default_palette(),
         ColorTheme::Dark => ThemePalette::dark_palette(),
         ColorTheme::Light => ThemePalette::light_palette(),
@@ -136,8 +139,17 @@ mod tests {
 
     #[test]
     fn test_color_theme_from_str_aliases() {
-        assert_eq!(ColorTheme::from_str("HIGH_CONTRAST"), ColorTheme::HighContrast);
-        assert_eq!(ColorTheme::from_str("high-contrast"), ColorTheme::HighContrast);
-        assert_eq!(ColorTheme::from_str("unknown"), ColorTheme::Default);
+        assert_eq!(
+            "HIGH_CONTRAST".parse::<ColorTheme>().unwrap(),
+            ColorTheme::HighContrast
+        );
+        assert_eq!(
+            "high-contrast".parse::<ColorTheme>().unwrap(),
+            ColorTheme::HighContrast
+        );
+        assert_eq!(
+            "unknown".parse::<ColorTheme>().unwrap(),
+            ColorTheme::Default
+        );
     }
 }
