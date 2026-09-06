@@ -1,0 +1,105 @@
+=== /health ===
+ok
+=== /metrics ===
+{
+    "timestamp": "2026-09-06T19:57:04.181723Z",
+    "cpu_usage_percent": 15.610046,
+    "memory_used_bytes": 14357790720,
+    "memory_total_bytes": 25769803776,
+    "memory_usage_percent": 55.71556091308594,
+    "network_rx_bytes": 2048,
+    "network_tx_bytes": 3072,
+    "cpu_cores": [
+        29.268291,
+        25.0,
+        15.757576,
+        10.778442,
+        3.0120482,
+        3.6144576,
+        2.4096384,
+        3.5714288,
+        46.38554,
+        11.377245,
+        17.964073,
+        18.181818
+    ],
+    "disks": [
+        {
+            "name": "Macintosh HD",
+            "total_bytes": 494384795648,
+            "available_bytes": 76376780770,
+            "used_percent": 84.55114691181159
+        },
+        {
+            "name": "Macintosh HD",
+            "total_bytes": 494384795648,
+            "available_bytes": 76376756194,
+            "used_percent": 84.55115188283825
+        }
+    ],
+    "os_name": "Darwin",
+    "kernel_version": "25.6.0",
+    "uptime_seconds": 91097,
+    "processes": [
+        {
+            "pid": 66715,
+            "name": "com.apple.SafariPlatformSupport.Helper",
+            "cpu_usage": 0.0,
+            "memory_bytes": 39518208
+        },
+        {
+            "pid": 1140,
+            "name": "WindowManager",
+            "cpu_usage": 0.0,
+            "memory_bytes": 30834688
+        },
+        {
+            "pid": 1099,
+            "name": "distnoted",
+            "cpu_usage": 0.0,
+            "memory_bytes": 0
+        },
+        {
+            "pid": 1100,
+            "name": "nfcd",
+            "cpu_usage": 0.0,
+            "memory_bytes": 0
+        },
+        {
+            "pid": 1197,
+            "name": "CMFSyncAgent",
+            "cpu_usage": 0.0,
+            "memory_bytes": 7766016
+        },
+        {
+            "pid": 1065,
+            "name": "coreauthd",
+            "cpu_usage": 0.0,
+            "memory_bytes": 14336000
+        },
+        {
+            "pid": 2155,
+            "name": "intelligenceplatformd",
+            "cpu_usage": 0.0,
+            "memory_bytes": 14204928
+        },
+        {
+            "pid": 1009,
+            "name": "networkserviceproxy",
+            "cpu_usage": 0.0,
+            "memory_bytes": 27934720
+        },
+        {
+            "pid": 1194,
+            "name": "AudioConverterService",
+            "cpu_usage": 0.0,
+            "memory_bytes": 3047424
+        },
+        {
+            "pid": 69814,
+            "name": "grainx",
+            "cpu_usage": 0.0,
+            "memory_bytes": 16138240
+        }
+    ]
+}
