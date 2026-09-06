@@ -1,6 +1,5 @@
 # Rust
 target/
-Cargo.lock
 
 # IDE / Cursor (local only — do not commit skills)
 .cursor/skills/

@@ -7,17 +7,17 @@ grainx uses stable Rust and a small, conventional validation loop.
 ~~~bash
 git clone https://github.com/rustfuture/grainx.git
 cd grainx
-cargo run
+cargo run --locked
 ~~~
 
 ## Before opening a pull request
 
 ~~~bash
 cargo fmt --check
-cargo check --all-targets
-cargo clippy --all-targets -- -D warnings
-cargo test
-cargo bench --no-run
+cargo check --locked --all-targets
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo bench --locked --no-run
 ~~~
 
 Keep changes focused, add tests for behavior changes, and update the README or docs when a command, configuration field, or operational constraint changes.

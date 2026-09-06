@@ -101,20 +101,19 @@ fn test_dashboard_config_serialization() {
 #[test]
 fn test_performance_monitor_fps_calculation() {
     let mut perf = PerformanceMonitor::new(60.0);
+    let mut measured = Vec::new();
 
-    // Simulate some frames
     for _ in 0..10 {
         perf.start_frame();
-        std::thread::sleep(std::time::Duration::from_millis(16)); // ~60 FPS
-        perf.end_frame();
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        measured.push(perf.end_frame());
     }
 
+    let average_duration: std::time::Duration =
+        measured.iter().copied().sum::<std::time::Duration>() / measured.len() as u32;
+    let expected_fps = 1.0 / average_duration.as_secs_f64();
     let fps = perf.get_fps();
-    assert!(
-        fps > 50.0 && fps < 70.0,
-        "FPS should be around 60, got {}",
-        fps
-    );
+    assert_eq!(fps, expected_fps);
 }
 
 #[test]

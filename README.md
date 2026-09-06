@@ -1,7 +1,7 @@
 # grainx
 
 [![CI](https://github.com/rustfuture/grainx/actions/workflows/ci.yml/badge.svg)](https://github.com/rustfuture/grainx/actions/workflows/ci.yml)
-[![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg?logo=rust)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.88%2B-orange.svg?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A Rust terminal system monitor for CPU, memory, disks, network activity, processes, and host metadata.
@@ -25,7 +25,7 @@ The term agent in this repository means the HTTP metrics process. It is not an A
 
 Prerequisites:
 
-- Stable Rust 1.85 or newer. The crate uses Rust edition 2024.
+- Stable Rust 1.88 or newer. The crate uses Rust edition 2024. This minimum is checked against the committed dependency lockfile.
 - An interactive terminal for the monitor command.
 
 ~~~bash
@@ -33,10 +33,10 @@ git clone https://github.com/rustfuture/grainx.git
 cd grainx
 
 # Run the local dashboard
-cargo run
+cargo run --locked
 
 # Build an optimized binary
-cargo build --release
+cargo build --locked --release
 ~~~
 
 The default command is monitor. In a headless environment, use the agent or export command instead.
@@ -45,26 +45,26 @@ The default command is monitor. In a headless environment, use the agent or expo
 
 ~~~bash
 # Interactive dashboard
-cargo run -- monitor
+cargo run --locked -- monitor
 
 # Local HTTP metrics service; localhost is the default bind address
-cargo run -- agent --bind 127.0.0.1 --port 9090
+cargo run --locked -- agent --bind 127.0.0.1 --port 9090
 
 # Export one snapshot without starting the TUI
-cargo run -- export
+cargo run --locked -- export
 
 # Export from a running remote agent
-cargo run -- export --remote http://127.0.0.1:9090
+cargo run --locked -- export --remote http://127.0.0.1:9090
 
 # Read metrics in the terminal
 curl http://127.0.0.1:9090/health
 curl http://127.0.0.1:9090/metrics
 
 # Connect the TUI to a remote agent
-cargo run -- monitor --remote http://127.0.0.1:9090
+cargo run --locked -- monitor --remote http://127.0.0.1:9090
 
 # Generate shell completions
-cargo run -- completions bash
+cargo run --locked -- completions bash
 ~~~
 
 The agent exposes host metrics without authentication or TLS. Keep it on localhost unless you have added appropriate network controls and an authenticated transport around it.
@@ -99,10 +99,10 @@ Run the same checks locally that CI runs:
 
 ~~~bash
 cargo fmt --check
-cargo check --all-targets
-cargo clippy --all-targets -- -D warnings
-cargo test
-cargo bench --no-run
+cargo check --locked --all-targets
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo bench --locked --no-run
 ~~~
 
 The Criterion benchmarks can be executed locally with cargo bench. Their results depend on the machine, operating system, and toolchain, so this repository does not present a universal performance claim. See [docs/verification.md](docs/verification.md) for the verification contract and [docs/architecture.md](docs/architecture.md) for the module boundaries.
