@@ -93,6 +93,41 @@ Supported environment overrides include GRAINX_REFRESH_INTERVAL_MS, GRAINX_CPU_W
 
 Process termination is subject to the operating system permissions of the user running grainx.
 
+
+## Metrics Semantics
+
+- **CPU Usage**: System-wide CPU utilization is calculated as the average utilization across all logical cores since the last refresh. The default refresh interval is 1 second (1000ms), which provides a balanced sampling window.
+- **Memory Usage**: Physical memory utilization reported by the operating system, excluding swap.
+- **Network Throughput**: Bytes sent and received since the last sample, divided by the elapsed time to calculate a rate (KB/s or MB/s).
+- **Sampling Interval**: By default, the system monitor samples state every 1000ms. This is configurable via `GRAINX_REFRESH_INTERVAL_MS`. Adaptive refresh can increase this interval (slowing down the sampling rate) up to 2000ms when system CPU usage exceeds the configured warning threshold (default 80%).
+
+
+## Performance and Microbenchmarks
+
+`grainx` is designed for low overhead. Microbenchmarks are executed via `cargo bench` (using Criterion) and represent isolated component performance on the test host, not a universal guarantee.
+
+Representative microbenchmarks (Apple M-series architecture, Release build):
+- **Formula Evaluation**: Simple arithmetic expressions (`cpu_usage * 1.5 + memory_usage * 0.8`) evaluate in **~820ns**.
+- **Time-Series Prediction**: Simple moving average predictions (window=100) run in **~26ns**.
+- **System Refresh**: The full `sysinfo` data gathering pass takes **~4-8ms** depending on the number of active processes.
+
+*These figures do not represent end-to-end system limits, but confirm the analytical layer contributes negligible overhead.*
+
+
+## Architecture
+
+- **Monitor (`SystemMonitor`)**: Gathers raw state using `sysinfo`.
+- **Analytics Engine (`analytics::*`)**: Performs zero-allocation formula evaluation and anomaly detection on the collected metrics.
+- **Agent Server (`agent::*`)**: Exposes collected metrics via an HTTP server using `axum`. By default, binds to `127.0.0.1:9090` without TLS or authentication (intended for local sidecar usage).
+- **TUI Renderer (`ui::*`, `tui::*`)**: Renders the terminal dashboard using `crossterm`. Employs frame-skipping and adaptive refresh intervals to gracefully degrade under heavy load.
+
+
+## Limitations
+
+- **Security**: The HTTP agent does not support TLS or authentication. Do not bind it to a public interface.
+- **Completeness**: Network and disk I/O are aggregates and do not currently drill down into per-socket or per-file statistics.
+- **OS Support**: CI actively tests Linux. macOS works natively but is considered secondary. Windows support is experimental.
+
 ## Verification
 
 Run the same checks locally that CI runs:
