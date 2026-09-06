@@ -74,7 +74,7 @@ impl SystemMonitor {
 
         let mut network_rx = 0;
         let mut network_tx = 0;
-        for (_name, data) in self.networks.iter() {
+        for data in self.networks.values() {
             network_rx += data.received();
             network_tx += data.transmitted();
         }
