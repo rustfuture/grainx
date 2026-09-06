@@ -31,7 +31,7 @@ impl MetricLogger {
         if !self.enabled || self.log_interval_iterations == 0 {
             return false;
         }
-        iteration > 0 && (iteration as u32).is_multiple_of(self.log_interval_iterations)
+        iteration > 0 && (iteration as u32).checked_rem(self.log_interval_iterations) == Some(0)
     }
 
     pub fn format_log_line(
@@ -42,10 +42,7 @@ impl MetricLogger {
         network_tx: u64,
     ) -> String {
         let timestamp = Utc::now().to_rfc3339();
-        format!(
-            "{},{},{},{},{},{}",
-            timestamp, cpu_percent, memory_used, memory_total, network_rx, network_tx
-        )
+        format!("{timestamp},{cpu_percent},{memory_used},{memory_total},{network_rx},{network_tx}")
     }
 
     pub fn maybe_log(&mut self, iteration: i32, backend: &mut MetricBackend) -> Result<()> {
@@ -73,7 +70,7 @@ impl MetricLogger {
             .append(true)
             .open(&self.log_path)?;
 
-        writeln!(file, "{}", line)?;
+        writeln!(file, "{line}")?;
         Ok(())
     }
 }

@@ -1,47 +1,23 @@
-# grainx - İlerleme Durumu
+# Roadmap
 
-> Son güncelleme: 23 Mayıs 2026
+grainx is a pre-1.0 terminal monitoring project. This file tracks the work that is implemented and the follow-ups that still need evidence or product decisions.
 
-## ✅ Phase 1: Temizlik + Bozukları Düzelt (TAMAMLANDI)
+## Implemented
 
-- [x] Dead code temizliği
-- [x] Anomali tespiti düzeltildi
-- [x] Gerçek CPU↔Memory korelasyonu
+- [x] Local TUI for CPU, memory, disk, network, process, and host metrics
+- [x] Unicode/Braille chart rendering
+- [x] Adaptive refresh and high-load frame skipping
+- [x] Statistical anomaly detection, correlation, and moving-average estimates
+- [x] Local HTTP metrics service and remote monitor mode
+- [x] JSON and CSV snapshot export
+- [x] Configuration file, environment overrides, and CLI overrides
+- [x] Unit and integration tests
+- [x] Linux CI with formatting, all-target checks, Clippy, tests, and benchmark compilation
 
-## ✅ Phase 2: Dinamik Terminal (TAMAMLANDI)
+## Next
 
-- [x] DashboardLayout struct (terminal boyutuna göre layout)
-- [x] handle_input → Action enum (Continue/Exit/Resize)
-- [x] Dinamik layout + resize handling
-- [x] `s` tuşu ile CSV/JSON kaydetme (`grainx_stats.json`, `grainx_stats.csv`)
-
-## ✅ Phase 3: Yeni Özellikler (TAMAMLANDI)
-
-- [x] Renk teması desteği (`color_theme` config alanı)
-- [x] Log dosyasına metrik yazma (`grainx_metrics.log`)
-
-## ✅ Phase 4: Agent + Remote (TAMAMLANDI)
-
-- [x] CLI alt komutları: `monitor`, `agent`, `version`
-- [x] HTTP agent: `GET /health`, `GET /metrics`
-- [x] Network throughput grafiği
-- [x] Remote monitor client: `grainx monitor --remote http://host:9090`
-
-## ✅ Sprint 1–4: Skill-Bazlı İyileştirmeler (TAMAMLANDI)
-
-- [x] `monitor.rs` performans refactor (blocking sleep kaldırıldı, tek `refresh()`)
-- [x] `println!` uyarıları → TUI alert kuyruğu
-- [x] TTY kontrolü + anlamlı hata mesajı
-- [x] Ctrl+C graceful shutdown (TUI + agent)
-- [x] Config önceliği: CLI flag > env > `dashboard_config.json`
-- [x] Non-zero exit code hata durumunda
-- [x] Clippy temiz (`cargo clippy -- -D warnings`)
-- [x] GitHub Actions CI
-- [x] Cursor hooks (`cargo check` after edit)
-
-## 📝 Notlar
-
-- Testler: `cargo test` → 85 test
-- Agent: `grainx agent -p 9090` → `curl http://127.0.0.1:9090/metrics`
-- Remote TUI: `grainx monitor --remote http://127.0.0.1:9090`
-- Headless ortamda TUI yerine agent modu kullanın
+- [ ] Add Windows and macOS CI jobs or a documented release validation matrix
+- [ ] Decide whether the HTTP agent needs authentication, TLS, or rate limiting before non-local deployment
+- [ ] Replace the prototype formula evaluator if expression support grows beyond simple left-to-right arithmetic
+- [ ] Publish reproducible benchmark results with the machine and toolchain recorded
+- [ ] Define the first stable release scope and versioning policy

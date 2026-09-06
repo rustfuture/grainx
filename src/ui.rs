@@ -107,7 +107,7 @@ pub async fn draw_dashboard(
     };
     canvas.set_color(cpu_color)?;
     canvas.set_cursor(12, 2)?;
-    canvas.draw_str(&format!("{:6.2}%", cpu_usage))?;
+    canvas.draw_str(&format!("{cpu_usage:6.2}%"))?;
 
     state.cpu_history.push(cpu_usage as f64);
     state.mem_history.push(memory_percentage);
@@ -206,8 +206,7 @@ pub async fn draw_dashboard(
     canvas.set_cursor(0, ctx.layout.net_rect.y.saturating_sub(1))?;
     canvas.set_color(ctx.palette.label)?;
     canvas.draw_str(&format!(
-        "Network I/O: RX {:.1} KB/s  TX {:.1} KB/s",
-        rx_kbps, tx_kbps
+        "Network I/O: RX {rx_kbps:.1} KB/s  TX {tx_kbps:.1} KB/s"
     ))?;
 
     let max_net_kbps = (rx_kbps + tx_kbps).max(1.0);
@@ -272,7 +271,7 @@ pub async fn draw_dashboard(
             ctx.palette.ok
         };
         canvas.set_color(core_color)?;
-        canvas.draw_str(&format!("C{}:{:4.1}% ", i, core_usage))?;
+        canvas.draw_str(&format!("C{i}:{core_usage:4.1}% "))?;
     }
 
     canvas.set_cursor(0, ctx.layout.network_start_y + 3)?;
@@ -306,14 +305,14 @@ pub async fn draw_dashboard(
             && let Some(correlation) = calculate_correlation(&state.cpu_history, &state.mem_history)
         {
             canvas.set_cursor(0, ctx.layout.network_start_y + 4)?;
-            canvas.draw_str(&format!("Corr(CPU↔Mem): {:.3}  ", correlation))?;
+            canvas.draw_str(&format!("Corr(CPU↔Mem): {correlation:.3}  "))?;
         }
 
         if ctx.config.show_predictions
             && let Some(predicted_cpu) = predict_next_value(&state.cpu_history, 5)
         {
             canvas.set_cursor(25, ctx.layout.network_start_y + 4)?;
-            canvas.draw_str(&format!("Pred CPU: {:.1}%  ", predicted_cpu))?;
+            canvas.draw_str(&format!("Pred CPU: {predicted_cpu:.1}%  "))?;
         }
 
         let mut formula_metrics = HashMap::new();
@@ -322,7 +321,7 @@ pub async fn draw_dashboard(
             evaluate_metric_formula("cpu_usage * 1.5 + 5.0", &formula_metrics)
         {
             canvas.set_cursor(45, ctx.layout.network_start_y + 4)?;
-            canvas.draw_str(&format!("Custom: {:.1}", custom_value))?;
+            canvas.draw_str(&format!("Custom: {custom_value:.1}"))?;
         }
     }
 

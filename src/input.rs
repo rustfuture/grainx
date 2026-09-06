@@ -45,7 +45,7 @@ pub fn handle_input(
 
                     canvas.set_cursor(0, layout.proc_start_y + 10)?;
                     canvas.set_color(palette.critical)?;
-                    canvas.draw_str(&format!("Kill process '{}' (PID: {})? (y/N): ", name, pid))?;
+                    canvas.draw_str(&format!("Kill process '{name}' (PID: {pid})? (y/N): "))?;
 
                     if let Event::Key(confirm_key) = event::read()?
                         && let KeyCode::Char('y') | KeyCode::Char('Y') = confirm_key.code
@@ -53,11 +53,11 @@ pub fn handle_input(
                         if backend.kill_process(*pid) {
                             canvas.set_cursor(0, layout.proc_start_y + 11)?;
                             canvas.set_color(palette.ok)?;
-                            canvas.draw_str(&format!("Process {} killed successfully!", name))?;
+                            canvas.draw_str(&format!("Process {name} killed successfully!"))?;
                         } else {
                             canvas.set_cursor(0, layout.proc_start_y + 11)?;
                             canvas.set_color(palette.critical)?;
-                            canvas.draw_str(&format!("Failed to kill process {}", name))?;
+                            canvas.draw_str(&format!("Failed to kill process {name}"))?;
                         }
                     }
 
@@ -90,10 +90,8 @@ pub fn handle_input(
                     match StatsSnapshot::save_both(JSON_PATH, CSV_PATH, backend) {
                         Ok(()) => {
                             canvas.set_color(palette.ok)?;
-                            canvas.draw_str(&format!(
-                                "Stats saved to {} and {}",
-                                JSON_PATH, CSV_PATH
-                            ))?;
+                            canvas
+                                .draw_str(&format!("Stats saved to {JSON_PATH} and {CSV_PATH}"))?;
                         }
                         Err(err) => {
                             canvas.set_color(palette.critical)?;
