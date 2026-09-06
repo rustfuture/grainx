@@ -77,6 +77,7 @@ criterion_group!(
     benchmark_correlation,
     benchmark_prediction,
     benchmark_metric_formula,
+    benchmark_monitor_refresh,
     benchmark_performance_monitor
 );
 criterion_main!(benches);

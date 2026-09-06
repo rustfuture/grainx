@@ -1,26 +1,23 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project are documented here.
+
+## [Unreleased]
+
+- Added the HTTP metrics agent, remote monitor path, and JSON/CSV export.
+- Added configuration precedence across file, environment, and CLI overrides.
+- Added adaptive refresh, process alerts, themes, logging, and shell completions.
+- Added CI checks for formatting, all-target compilation, Clippy, tests, and benchmark compilation.
 
 ## [0.1.0] - 2025-07-02
 
 ### Added
 
-- **High-Resolution Visualization:** Implemented CPU and memory usage graphs with Unicode braille patterns.
-- **Intelligent Analytics:**
-    - Statistical anomaly detection for CPU usage.
-    - Correlation analysis between CPU and other metrics.
-    - Predictive analysis for future CPU usage.
-- **Adaptive Monitoring:** The monitoring interval adapts to the system load.
-- **Interactive UI:**
-    - Process selection using up and down arrow keys.
-    - Process killing with the 'k' key (includes a confirmation prompt).
-- **Configuration:** Load dashboard configuration from `dashboard_config.json`.
+- High-resolution CPU and memory visualizations using Unicode Braille patterns.
+- Initial statistical analytics and adaptive monitoring.
+- Interactive process selection and process termination controls.
+- Dashboard configuration loaded from dashboard_config.json.
 
 ### Changed
 
-- Refactored the main loop into smaller, more manageable functions (`handle_input` and `draw_dashboard`).
-
-### Fixed
-
-- N/A
+- Refactored the main loop into smaller input and rendering functions.
