@@ -1,5 +1,5 @@
-use crate::rendering::AdvancedCanvas;
-use crate::theme::ThemePalette;
+use grainx::rendering::AdvancedCanvas;
+use grainx::theme::ThemePalette;
 use std::io;
 
 pub fn show_help(canvas: &mut AdvancedCanvas, palette: &ThemePalette) -> io::Result<()> {

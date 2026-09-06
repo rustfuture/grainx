@@ -1,14 +1,14 @@
-use crate::analytics::{
+use grainx::analytics::{
     AnomalyDetector, TimeSeriesPoint, calculate_correlation, evaluate_metric_formula,
     predict_next_value,
 };
-use crate::config::DashboardConfig;
-use crate::error::Result;
-use crate::metrics::MetricBackend;
-use crate::network::throughput_kbps;
-use crate::performance::PerformanceMonitor;
-use crate::rendering::{AdvancedCanvas, DashboardLayout};
-use crate::theme::ThemePalette;
+use grainx::config::DashboardConfig;
+use grainx::error::Result;
+use grainx::metrics::MetricBackend;
+use grainx::network::throughput_kbps;
+use grainx::performance::PerformanceMonitor;
+use grainx::rendering::{AdvancedCanvas, DashboardLayout};
+use grainx::theme::ThemePalette;
 use chrono::Utc;
 use std::collections::HashMap;
 

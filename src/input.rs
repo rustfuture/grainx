@@ -1,9 +1,9 @@
-use crate::export::StatsSnapshot;
+use grainx::export::StatsSnapshot;
 use crate::help::show_help;
-use crate::metrics::MetricBackend;
-use crate::performance::PerformanceMonitor;
-use crate::rendering::{AdvancedCanvas, DashboardLayout};
-use crate::theme::ThemePalette;
+use grainx::metrics::MetricBackend;
+use grainx::performance::PerformanceMonitor;
+use grainx::rendering::{AdvancedCanvas, DashboardLayout};
+use grainx::theme::ThemePalette;
 use crossterm::event::{self, Event, KeyCode, poll};
 use std::io;
 use std::time::Duration;

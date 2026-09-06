@@ -1,33 +1,20 @@
-mod agent;
-mod analytics;
-mod cli;
-mod config;
-mod error;
-mod export;
 mod export_cmd;
 mod help;
 mod input;
-mod logging;
-mod metrics;
-mod monitor;
-mod network;
-mod performance;
-mod rendering;
-mod theme;
 mod tui;
 mod ui;
 
 use clap::{CommandFactory, Parser};
 use clap_complete::{Shell, generate};
-use cli::{Cli, Commands};
-use error::Result;
+use grainx::cli::{Cli, Commands};
+use grainx::error::Result;
 use std::io;
 use std::process;
 
 async fn run() -> Result<()> {
     match Cli::parse().resolved_command() {
         Commands::Monitor(args) => tui::run(args).await,
-        Commands::Agent { bind, port } => agent::run(&bind, port).await,
+        Commands::Agent { bind, port } => grainx::agent::run(&bind, port).await,
         Commands::Export(args) => export_cmd::run(&args.json, &args.csv, args.remote.as_deref()),
         Commands::Completions { shell } => {
             let mut cmd = Cli::command();
