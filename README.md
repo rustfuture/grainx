@@ -107,9 +107,9 @@ Process termination is subject to the operating system permissions of the user r
 `grainx` is designed for low overhead. Microbenchmarks are executed via `cargo bench` (using Criterion) and represent isolated component performance on the test host, not a universal guarantee.
 
 Representative microbenchmarks (Apple M-series architecture, Release build):
-- **Formula Evaluation**: Simple arithmetic expressions (`cpu_usage * 1.5 + memory_usage * 0.8`) evaluate in **~820ns**.
-- **Time-Series Prediction**: Simple moving average predictions (window=100) run in **~26ns**.
-- **System Refresh**: The full `sysinfo` data gathering pass takes **~4-8ms** depending on the number of active processes.
+- **Formula Evaluation**: Simple arithmetic expressions (`cpu_usage * 1.5 + memory_usage * 0.8`) evaluate in **~373ns** (simple) / **~556ns** (complex).
+- **Time-Series Prediction**: Simple moving average predictions (window=100) run in **~27ns**.
+- **System Refresh**: The full `sysinfo` data gathering pass takes **~39-51ms** depending on system load and active processes.
 
 *These figures do not represent end-to-end system limits, but confirm the analytical layer contributes negligible overhead.*
 
