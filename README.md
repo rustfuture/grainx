@@ -102,6 +102,12 @@ Process termination is subject to the operating system permissions of the user r
 - **Sampling Interval**: By default, the system monitor samples state every 1000ms. This is configurable via `GRAINX_REFRESH_INTERVAL_MS`. Adaptive refresh can increase this interval (slowing down the sampling rate) up to 2000ms when system CPU usage exceeds the configured warning threshold (default 80%).
 
 
+## Demos
+
+See [demos/](demos/) for a captured HTTP snapshot and a raw TUI capture, with reproduction commands and
+the limits of those captures (no recorded build identity; the TUI capture predates the network-label
+change).
+
 ## Performance and Microbenchmarks
 
 Microbenchmarks run via `cargo bench` (Criterion) measure isolated components on the test host; they are not a universal performance claim. A recorded run with its machine, OS, toolchain, command, and base commit is kept in [benches/results/2026-09-10-macos-arm64.txt](benches/results/2026-09-10-macos-arm64.txt). To reproduce:
