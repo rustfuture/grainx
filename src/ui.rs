@@ -1,3 +1,4 @@
+use chrono::Utc;
 use grainx::analytics::{
     AnomalyDetector, TimeSeriesPoint, calculate_correlation, evaluate_metric_formula,
     predict_next_value,
@@ -9,7 +10,6 @@ use grainx::network::throughput_kbps;
 use grainx::performance::PerformanceMonitor;
 use grainx::rendering::{AdvancedCanvas, DashboardLayout};
 use grainx::theme::ThemePalette;
-use chrono::Utc;
 use std::collections::HashMap;
 
 /// Mutable graph/history state carried across TUI frames.

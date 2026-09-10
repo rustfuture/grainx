@@ -1,10 +1,10 @@
-use grainx::export::StatsSnapshot;
 use crate::help::show_help;
+use crossterm::event::{self, Event, KeyCode, poll};
+use grainx::export::StatsSnapshot;
 use grainx::metrics::MetricBackend;
 use grainx::performance::PerformanceMonitor;
 use grainx::rendering::{AdvancedCanvas, DashboardLayout};
 use grainx::theme::ThemePalette;
-use crossterm::event::{self, Event, KeyCode, poll};
 use std::io;
 use std::time::Duration;
 
