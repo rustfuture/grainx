@@ -1,15 +1,15 @@
+use crate::input::{Action, handle_input};
+use crate::ui::{DashboardState, DrawContext, draw_dashboard};
+use crossterm::{cursor, execute, style::ResetColor, terminal};
 use grainx::analytics::{AnomalyDetector, AnomalyDetectorConfig};
 use grainx::cli::MonitorArgs;
 use grainx::config::{ConfigOverrides, DashboardConfig};
 use grainx::error::{GrainxError, Result};
-use crate::input::{Action, handle_input};
 use grainx::logging::MetricLogger;
 use grainx::metrics::MetricBackend;
 use grainx::performance::PerformanceMonitor;
 use grainx::rendering::{AdvancedCanvas, DashboardLayout};
 use grainx::theme::palette_for;
-use crate::ui::{DashboardState, DrawContext, draw_dashboard};
-use crossterm::{cursor, execute, style::ResetColor, terminal};
 use std::io::{self, IsTerminal};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
