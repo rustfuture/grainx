@@ -104,9 +104,19 @@ Process termination is subject to the operating system permissions of the user r
 
 ## Demos
 
-See [demos/](demos/) for a captured HTTP snapshot and a raw TUI capture, with reproduction commands and
-the limits of those captures (no recorded build identity; the TUI capture predates the network-label
-change).
+See [demos/](demos/) for verified 2026-09-11 captures with build identity and reproduction commands:
+a pty TUI capture that shows the current `Network I/O: ... (last interval)` label, real
+`/health` + `/metrics` + local `export` output, and an honest record of the currently failing remote
+`export` path. The older 2026-09-06 captures are kept and marked historical.
+
+~~~bash
+cargo build --locked
+python3 -m venv /tmp/grainx-render-venv && /tmp/grainx-render-venv/bin/pip install pyte==0.8.2
+/tmp/grainx-render-venv/bin/python demos/capture_tui.py target/debug/grainx /tmp/tui.raw /tmp/tui.txt 5 110 50
+~~~
+
+See [demos/README.md](demos/README.md) and [demos/verification_2026-09-11.md](demos/verification_2026-09-11.md)
+for the full commands, hashes, privacy review, and limitations.
 
 ## Performance and Microbenchmarks
 
