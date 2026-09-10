@@ -43,7 +43,7 @@ python3 -m venv /tmp/grainx-render-venv
   5 110 50
 ~~~
 
-The raw stream contains zeros occurrences of `KB/s` and one occurrence of the new label
+The raw stream contains zero occurrences of `KB/s` and one occurrence of the new label
 `Network I/O: RX 13.0 KB  TX 4.0 KB (last interval)` (values vary per run). The environment variable
 `TERM=xterm-256color` was set for the child. The capture shows `Iteration: 2` because the 5-second
 window covers the first frames; the frame counter is not part of the label verification.
@@ -73,7 +73,7 @@ Run on the same commit with the committed lockfile:
 cargo fmt --check                                        PASS
 cargo check --locked --all-targets                       PASS
 cargo clippy --locked --all-targets -- -D warnings       PASS
-cargo test --locked                                      PASS (13 unit tests + integration/doc tests, 0 failed)
+cargo test --locked                                      PASS (43 library + 13 binary + 2 integration tests, 0 failed; 0 doctests)
 ~~~
 
 ## Privacy review
