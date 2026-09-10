@@ -148,9 +148,18 @@ pub fn calculate_correlation(data1: &[f64], data2: &[f64]) -> Option<f64> {
     }
 }
 
+/// Evaluate a decimal arithmetic expression against named metrics.
+///
+/// Contract:
+/// - Metric names are substituted textually with their decimal values.
+/// - Tokens are separated by ASCII whitespace and evaluated strictly
+///   left-to-right with no operator precedence (`1 + 2 * 3` evaluates to `9`).
+/// - Returns `None` for an empty expression, a non-numeric first token, an
+///   unknown metric name, an operator without an operand, an unsupported
+///   operator, or division by zero.
 pub fn evaluate_metric_formula(formula: &str, metrics: &HashMap<&str, f64>) -> Option<f64> {
-    // Very basic formula evaluation for prototype
-    // Supports only 'cpu_usage' and simple arithmetic (+, -, *, /)
+    // Very basic formula evaluation for prototype.
+    // Supports named metrics and the operators +, -, *, / (left to right).
     let mut result = formula.to_string();
 
     // Replace metric names with their values
@@ -158,7 +167,6 @@ pub fn evaluate_metric_formula(formula: &str, metrics: &HashMap<&str, f64>) -> O
         result = result.replace(name, &value.to_string());
     }
 
-    // Evaluate the expression (very basic, no operator precedence, just left to right)
     let parts: Vec<&str> = result.split_whitespace().collect();
     if parts.is_empty() {
         return None;
@@ -169,13 +177,19 @@ pub fn evaluate_metric_formula(formula: &str, metrics: &HashMap<&str, f64>) -> O
     let mut i = 1;
     while i < parts.len() {
         let operator = parts[i];
-        let operand = parts[i + 1].parse::<f64>().ok()?;
+        // An operator must be followed by an operand.
+        let operand = parts.get(i + 1)?.parse::<f64>().ok()?;
 
         match operator {
             "+" => current_value += operand,
             "-" => current_value -= operand,
             "*" => current_value *= operand,
-            "/" => current_value /= operand,
+            "/" => {
+                if operand == 0.0 {
+                    return None;
+                }
+                current_value /= operand;
+            }
             _ => return None, // Unsupported operator
         }
         i += 2;
@@ -234,5 +248,31 @@ mod tests {
         metrics.insert("cpu_usage", 30.0);
         let result = evaluate_metric_formula("cpu_usage + 20.0", &metrics).unwrap();
         assert_eq!(result, 50.0);
+    }
+
+    #[test]
+    fn test_metric_formula_contract() {
+        let mut metrics = HashMap::new();
+        metrics.insert("cpu_usage", 10.0);
+
+        // Empty and malformed expressions return None instead of panicking.
+        assert_eq!(evaluate_metric_formula("", &metrics), None);
+        assert_eq!(evaluate_metric_formula("   ", &metrics), None);
+        assert_eq!(evaluate_metric_formula("1 +", &metrics), None);
+        assert_eq!(evaluate_metric_formula("1 + * 2", &metrics), None);
+        assert_eq!(
+            evaluate_metric_formula("unknown_metric * 2", &metrics),
+            None
+        );
+
+        // Division by zero is not a finite result.
+        assert_eq!(evaluate_metric_formula("10 / 0", &metrics), None);
+
+        // Left-to-right evaluation with no operator precedence.
+        assert_eq!(evaluate_metric_formula("1 + 2 * 3", &metrics), Some(9.0));
+        assert_eq!(
+            evaluate_metric_formula("cpu_usage + 5", &metrics),
+            Some(15.0)
+        );
     }
 }
