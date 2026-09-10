@@ -1,0 +1,171 @@
+# grainx HTTP + export capture — 2026-09-11
+# Build identity and privacy review: demos/verification_2026-09-11.md
+# commit 5dde1082e5f8989793e79bd5130ec728dd0bde83, binary sha256 9dfd9cccdd5d4f2352d6aca527b0c3f8f75bda35f95aa1134d0bfaee98fdce00
+
+$ target/debug/grainx agent --bind 127.0.0.1 --port <free-port>
+$ curl -fsS http://127.0.0.1:<free-port>/health
+$ curl -fsS http://127.0.0.1:<free-port>/metrics
+$ (cd local-export && target/debug/grainx export)
+$ (cd remote-export && target/debug/grainx export --remote http://127.0.0.1:<free-port>)
+
+exit codes: curl /health exit: 0 curl /metrics exit: 0 local export exit: 0 remote export exit: 101 
+
+## agent.log
+grainx agent listening on http://127.0.0.1:52288
+  GET /health  — liveness
+  GET /metrics — JSON snapshot
+
+## GET /health
+ok
+
+## GET /metrics
+{"timestamp":"2026-09-10T21:44:44.632225Z","cpu_usage_percent":18.611063,"memory_used_bytes":14660452352,"memory_total_bytes":25769803776,"memory_usage_percent":56.89004262288412,"network_rx_bytes":78848,"network_tx_bytes":29696,"cpu_cores":[46.468277,35.73932,27.081404,21.67373,5.082581,3.7802777,3.06554,2.7296002,23.177866,21.945896,17.880657,14.707619],"disks":[{"name":"Macintosh HD","total_bytes":494384795648,"available_bytes":80377533559,"used_percent":83.74190827336274},{"name":"Macintosh HD","total_bytes":494384795648,"available_bytes":80377533559,"used_percent":83.74190827336274}],"os_name":"Darwin","kernel_version":"25.6.0","uptime_seconds":6121,"processes":[{"pid":685,"name":"corespotlightd","cpu_usage":0.0,"memory_bytes":118751232},{"pid":1040,"name":"promotedcontentd","cpu_usage":0.0,"memory_bytes":13025280},{"pid":957,"name":"VTDecoderXPCService","cpu_usage":0.0,"memory_bytes":6701056},{"pid":550,"name":"com.apple.DriverKit-IOUserDockChannelSerial","cpu_usage":0.0,"memory_bytes":0},{"pid":1126,"name":"LinkedNotesUIService","cpu_usage":0.0,"memory_bytes":12238848},{"pid":2668,"name":"GameControllerConfigService","cpu_usage":0.0,"memory_bytes":0},{"pid":459,"name":"distnoted","cpu_usage":0.0,"memory_bytes":0},{"pid":762,"name":"ScopedBookmarkAgent","cpu_usage":0.0,"memory_bytes":4423680},{"pid":429,"name":"airportd","cpu_usage":0.0,"memory_bytes":0},{"pid":2673,"name":"com.apple.BKAgentService","cpu_usage":0.0,"memory_bytes":6324224}]}
+
+## local export stdout
+Exported stats to grainx_stats.json and grainx_stats.csv
+
+## local export JSON (grainx_stats.json)
+{
+  "timestamp": "2026-09-10T21:44:44.670743Z",
+  "cpu_usage_percent": 18.611198,
+  "memory_used_bytes": 14667399168,
+  "memory_total_bytes": 25769803776,
+  "memory_usage_percent": 56.91699981689453,
+  "network_rx_bytes": 9216,
+  "network_tx_bytes": 5120,
+  "cpu_cores": [
+    46.468105,
+    35.739483,
+    27.08139,
+    21.673689,
+    5.0831027,
+    3.7801974,
+    3.06547,
+    2.7298558,
+    23.178154,
+    21.946177,
+    17.880873,
+    14.707889
+  ],
+  "disks": [
+    {
+      "name": "Macintosh HD",
+      "total_bytes": 494384795648,
+      "available_bytes": 80377414775,
+      "used_percent": 83.7419322999916
+    },
+    {
+      "name": "Macintosh HD",
+      "total_bytes": 494384795648,
+      "available_bytes": 80377414775,
+      "used_percent": 83.7419322999916
+    }
+  ],
+  "os_name": "Darwin",
+  "kernel_version": "25.6.0",
+  "uptime_seconds": 6121,
+  "processes": [
+    {
+      "pid": 852,
+      "name": "assistant_cdmd",
+      "cpu_usage": 0.0,
+      "memory_bytes": 9650176
+    },
+    {
+      "pid": 16622,
+      "name": "bash",
+      "cpu_usage": 0.0,
+      "memory_bytes": 2146304
+    },
+    {
+      "pid": 2505,
+      "name": "proactived",
+      "cpu_usage": 0.0,
+      "memory_bytes": 12189696
+    },
+    {
+      "pid": 1066,
+      "name": "StocksKitService",
+      "cpu_usage": 0.0,
+      "memory_bytes": 6979584
+    },
+    {
+      "pid": 1063,
+      "name": "naturallanguaged",
+      "cpu_usage": 0.0,
+      "memory_bytes": 4030464
+    },
+    {
+      "pid": 694,
+      "name": "communicationtrustd",
+      "cpu_usage": 0.0,
+      "memory_bytes": 11747328
+    },
+    {
+      "pid": 787,
+      "name": "ContextService",
+      "cpu_usage": 0.0,
+      "memory_bytes": 10240000
+    },
+    {
+      "pid": 551,
+      "name": "containermanagerd",
+      "cpu_usage": 0.0,
+      "memory_bytes": 0
+    },
+    {
+      "pid": 859,
+      "name": "photoanalysisd",
+      "cpu_usage": 0.0,
+      "memory_bytes": 34226176
+    },
+    {
+      "pid": 922,
+      "name": "inputanalyticsd",
+      "cpu_usage": 0.0,
+      "memory_bytes": 6012928
+    }
+  ]
+}
+
+## local export CSV (grainx_stats.csv)
+section,field,value
+system,timestamp,2026-09-10T21:44:44.670743+00:00
+system,cpu_usage_percent,18.61
+system,memory_used_bytes,14667399168
+system,memory_total_bytes,25769803776
+system,memory_usage_percent,56.92
+system,network_rx_bytes,9216
+system,network_tx_bytes,5120
+system,os_name,Darwin
+system,kernel_version,25.6.0
+system,uptime_seconds,6121
+system,cpu_cores,46.5|35.7|27.1|21.7|5.1|3.8|3.1|2.7|23.2|21.9|17.9|14.7
+disk,name,Macintosh HD
+disk,total_bytes,494384795648
+disk,available_bytes,80377414775
+disk,used_percent,83.74
+disk,name,Macintosh HD
+disk,total_bytes,494384795648
+disk,available_bytes,80377414775
+disk,used_percent,83.74
+
+pid,name,cpu_usage_percent,memory_bytes
+852,assistant_cdmd,0.00,9650176
+16622,bash,0.00,2146304
+2505,proactived,0.00,12189696
+1066,StocksKitService,0.00,6979584
+1063,naturallanguaged,0.00,4030464
+694,communicationtrustd,0.00,11747328
+787,ContextService,0.00,10240000
+551,containermanagerd,0.00,0
+859,photoanalysisd,0.00,34226176
+922,inputanalyticsd,0.00,6012928
+
+## remote export (KNOWN FAILURE at this commit: tokio runtime drop panic)
+# The only sanitization applied to this log is replacing the home directory path
+# /Users/<user>/.cargo with /Users/<redacted>/.cargo. No other changes.
+
+thread 'main' (157332) panicked at /Users/<redacted>/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-1.53.1/src/runtime/blocking/shutdown.rs:51:21:
+Cannot drop a runtime in a context where blocking is not allowed. This happens when a runtime is dropped from within an asynchronous context.
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
