@@ -1,0 +1,151 @@
+# grainx Criterion results
+# date: 2026-09-10T20:33:41Z
+# base commit: 1aa311792261cfbfd7ea1cb5d07b8dff4ec512cb
+# code under test: base commit plus the P02 fixes in the commit that adds this file
+# rustc: rustc 1.94.1 (e408947bf 2026-03-25)
+# cargo: cargo 1.94.1 (29ea6fb6a 2026-03-24)
+# os: macOS 26.6.2 (arm64)
+# cpu: Apple M4 Pro
+# command: cargo bench --locked
+
+   Compiling grainx v0.1.0 (/Users/macintosh/Desktop/Müzik/grainx)
+    Finished `bench` profile [optimized] target(s) in 2.64s
+     Running unittests src/lib.rs (target/release/deps/grainx-3ac48915eb018be0)
+
+running 43 tests
+test agent::tests::health_endpoint_returns_ok ... ignored
+test agent::tests::metrics_endpoint_returns_json ... ignored
+test analytics::tests::test_correlation_no_correlation ... ignored
+test analytics::tests::test_correlation_perfect_positive ... ignored
+test analytics::tests::test_metric_formula_addition ... ignored
+test analytics::tests::test_metric_formula_basic ... ignored
+test analytics::tests::test_metric_formula_contract ... ignored
+test analytics::tests::test_prediction_basic ... ignored
+test cli::tests::defaults_to_monitor ... ignored
+test cli::tests::parses_agent_flags ... ignored
+test cli::tests::parses_completions_subcommand ... ignored
+test cli::tests::parses_export_subcommand ... ignored
+test cli::tests::parses_monitor_remote_flag ... ignored
+test config::tests::test_config_file_operations ... ignored
+test config::tests::test_config_precedence_cli_over_env_and_file ... ignored
+test config::tests::test_default_config_creation ... ignored
+test export::tests::test_csv_escape_commas ... ignored
+test export::tests::test_save_csv_contains_sections ... ignored
+test export::tests::test_save_json_roundtrip ... ignored
+test logging::tests::test_interval_gating ... ignored
+test logging::tests::test_interval_gating_when_disabled ... ignored
+test logging::tests::test_log_line_format ... ignored
+test logging::tests::test_maybe_log_skips_off_interval ... ignored
+test logging::tests::test_maybe_log_writes_on_interval ... ignored
+test metrics::tests::agent_metrics_json_is_remote_compatible ... ignored
+test metrics::tests::converts_snapshot_to_system_metrics ... ignored
+test metrics::tests::local_backend_refresh_returns_metrics ... ignored
+test metrics::tests::remote_backend_errors_when_agent_unreachable ... ignored
+test monitor::tests::alerts_queue_instead_of_printing ... ignored
+test monitor::tests::refresh_is_fast_without_blocking_sleeps ... ignored
+test network::tests::sample_bytes_convert_to_kibibytes ... ignored
+test performance::tests::test_adaptive_refresh_high_cpu ... ignored
+test performance::tests::test_adaptive_refresh_low_cpu ... ignored
+test performance::tests::test_frame_skipping ... ignored
+test performance::tests::test_performance_monitor_creation ... ignored
+test performance::tests::test_toggle_adaptive ... ignored
+test rendering::tests::layout_enforces_minimum_terminal_size ... ignored
+test rendering::tests::layout_network_section_below_graphs ... ignored
+test rendering::tests::layout_scales_with_large_terminal ... ignored
+test theme::tests::test_color_theme_deserialize ... ignored
+test theme::tests::test_color_theme_from_str_aliases ... ignored
+test theme::tests::test_palette_for_known_themes ... ignored
+test theme::tests::test_palette_for_unknown_theme_falls_back_to_default ... ignored
+
+test result: ok. 0 passed; 0 failed; 43 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/release/deps/grainx-9c47f9b4db70d38f)
+
+running 2 tests
+test export_cmd::tests::local_export_writes_json_and_csv ... ignored
+test export_cmd::tests::remote_export_errors_when_agent_unreachable ... ignored
+
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches/performance_bench.rs (target/release/deps/performance_bench-c822dfb197a6737c)
+Gnuplot not found, using plotters backend
+Benchmarking correlation_1000_points
+Benchmarking correlation_1000_points: Warming up for 3.0000 s
+Benchmarking correlation_1000_points: Collecting 100 samples in estimated 5.0075 s (2.3M iterations)
+Benchmarking correlation_1000_points: Analyzing
+correlation_1000_points time:   [2.1669 µs 2.1720 µs 2.1795 µs]
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) low severe
+  3 (3.00%) low mild
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking prediction_window_10
+Benchmarking prediction_window_10: Warming up for 3.0000 s
+Benchmarking prediction_window_10: Collecting 100 samples in estimated 5.0000 s (2.9B iterations)
+Benchmarking prediction_window_10: Analyzing
+prediction_window_10    time:   [1.7284 ns 1.7301 ns 1.7317 ns]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) low severe
+  4 (4.00%) low mild
+  1 (1.00%) high mild
+
+Benchmarking prediction_window_100
+Benchmarking prediction_window_100: Warming up for 3.0000 s
+Benchmarking prediction_window_100: Collecting 100 samples in estimated 5.0001 s (304M iterations)
+Benchmarking prediction_window_100: Analyzing
+prediction_window_100   time:   [16.483 ns 16.508 ns 16.532 ns]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) low severe
+  1 (1.00%) low mild
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking simple_formula
+Benchmarking simple_formula: Warming up for 3.0000 s
+Benchmarking simple_formula: Collecting 100 samples in estimated 5.0007 s (18M iterations)
+Benchmarking simple_formula: Analyzing
+simple_formula          time:   [273.90 ns 274.24 ns 274.63 ns]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking complex_formula
+Benchmarking complex_formula: Warming up for 3.0000 s
+Benchmarking complex_formula: Collecting 100 samples in estimated 5.0021 s (12M iterations)
+Benchmarking complex_formula: Analyzing
+complex_formula         time:   [429.66 ns 430.32 ns 430.99 ns]
+Found 8 outliers among 100 measurements (8.00%)
+  1 (1.00%) low severe
+  3 (3.00%) low mild
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking system_monitor_refresh
+Benchmarking system_monitor_refresh: Warming up for 3.0000 s
+Benchmarking system_monitor_refresh: Collecting 100 samples in estimated 5.4416 s (300 iterations)
+Benchmarking system_monitor_refresh: Analyzing
+system_monitor_refresh  time:   [18.046 ms 18.139 ms 18.291 ms]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking performance_monitor_frame_cycle
+Benchmarking performance_monitor_frame_cycle: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 6.5s, enable flat sampling, or reduce sample count to 60.
+Benchmarking performance_monitor_frame_cycle: Collecting 100 samples in estimated 6.4949 s (5050 iterations)
+Benchmarking performance_monitor_frame_cycle: Analyzing
+performance_monitor_frame_cycle
+                        time:   [1.2830 ms 1.2872 ms 1.2919 ms]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+
+Benchmarking adaptive_refresh_calculation
+Benchmarking adaptive_refresh_calculation: Warming up for 3.0000 s
+Benchmarking adaptive_refresh_calculation: Collecting 100 samples in estimated 5.0002 s (88M iterations)
+Benchmarking adaptive_refresh_calculation: Analyzing
+adaptive_refresh_calculation
+                        time:   [51.739 ns 51.887 ns 52.078 ns]
+

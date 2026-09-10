@@ -1,6 +1,11 @@
-/// KB transferred since last sample (non-negative delta).
-pub fn throughput_kbps(current_bytes: u64, previous_bytes: u64) -> f64 {
-    current_bytes.saturating_sub(previous_bytes) as f64 / 1024.0
+/// Convert a per-sample network byte delta to kibibytes.
+///
+/// `bytes` is the byte count reported for the most recent sampling interval
+/// (`sysinfo`'s `NetworkData::received`/`transmitted` report bytes observed
+/// since the last refresh). It is a per-interval delta, not a cumulative
+/// counter and not a rate.
+pub fn sample_kibibytes(bytes: u64) -> f64 {
+    bytes as f64 / 1024.0
 }
 
 #[cfg(test)]
@@ -8,8 +13,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn throughput_uses_saturating_delta() {
-        assert!((throughput_kbps(2048, 1024) - 1.0).abs() < f64::EPSILON);
-        assert_eq!(throughput_kbps(512, 1024), 0.0);
+    fn sample_bytes_convert_to_kibibytes() {
+        assert!((sample_kibibytes(2048) - 2.0).abs() < f64::EPSILON);
+        assert_eq!(sample_kibibytes(0), 0.0);
     }
 }

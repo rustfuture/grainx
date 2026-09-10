@@ -98,26 +98,28 @@ Process termination is subject to the operating system permissions of the user r
 
 - **CPU Usage**: System-wide CPU utilization is calculated as the average utilization across all logical cores since the last refresh. The default refresh interval is 1 second (1000ms), which provides a balanced sampling window.
 - **Memory Usage**: Physical memory utilization reported by the operating system, excluding swap.
-- **Network Throughput**: Bytes sent and received since the last sample, divided by the elapsed time to calculate a rate (KB/s or MB/s).
+- **Network I/O**: `network_rx_bytes` and `network_tx_bytes` are the bytes received and transmitted during the most recent sampling interval (a per-interval delta reported by `sysinfo`). They are not cumulative counters and are not rates. The TUI labels the same values as kilobytes for the last interval.
 - **Sampling Interval**: By default, the system monitor samples state every 1000ms. This is configurable via `GRAINX_REFRESH_INTERVAL_MS`. Adaptive refresh can increase this interval (slowing down the sampling rate) up to 2000ms when system CPU usage exceeds the configured warning threshold (default 80%).
 
 
 ## Performance and Microbenchmarks
 
-`grainx` is designed for low overhead. Microbenchmarks are executed via `cargo bench` (using Criterion) and represent isolated component performance on the test host, not a universal guarantee.
+Microbenchmarks run via `cargo bench` (Criterion) measure isolated components on the test host; they are not a universal performance claim. A recorded run with its machine, OS, toolchain, command, and base commit is kept in [benches/results/2026-09-10-macos-arm64.txt](benches/results/2026-09-10-macos-arm64.txt). To reproduce:
 
-Representative microbenchmarks (Apple M-series architecture, Release build):
-- **Formula Evaluation**: Simple arithmetic expressions (`cpu_usage * 1.5 + memory_usage * 0.8`) evaluate in **~373ns** (simple) / **~556ns** (complex).
-- **Time-Series Prediction**: Simple moving average predictions (window=100) run in **~27ns**.
-- **System Refresh**: The full `sysinfo` data gathering pass takes **~39-51ms** depending on system load and active processes.
+~~~bash
+cargo bench --locked
+~~~
 
-*These figures do not represent end-to-end system limits, but confirm the analytical layer contributes negligible overhead.*
+Scope notes:
+
+- `system_monitor_refresh` constructs a fresh `SystemMonitor` and performs a single `refresh()` per iteration. It measures cold construction plus one refresh, and does **not** measure the CPU or memory cost of a long-running monitor loop.
+- The formula, prediction, and correlation benchmarks measure the analytical functions only. Those functions do allocate (metric substitution and token splitting build `String`/`Vec` values); they are not zero-allocation.
 
 
 ## Architecture
 
 - **Monitor (`SystemMonitor`)**: Gathers raw state using `sysinfo`.
-- **Analytics Engine (`analytics::*`)**: Performs zero-allocation formula evaluation and anomaly detection on the collected metrics.
+- **Analytics Engine (`analytics::*`)**: Performs formula evaluation and anomaly detection on the collected metrics.
 - **Agent Server (`agent::*`)**: Exposes collected metrics via an HTTP server using `axum`. By default, binds to `127.0.0.1:9090` without TLS or authentication (intended for local sidecar usage).
 - **TUI Renderer (`ui::*`, `tui::*`)**: Renders the terminal dashboard using `crossterm`. Employs frame-skipping and adaptive refresh intervals to gracefully degrade under heavy load.
 
