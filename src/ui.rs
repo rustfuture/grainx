@@ -6,7 +6,7 @@ use grainx::analytics::{
 use grainx::config::DashboardConfig;
 use grainx::error::Result;
 use grainx::metrics::MetricBackend;
-use grainx::network::throughput_kbps;
+use grainx::network::sample_kibibytes;
 use grainx::performance::PerformanceMonitor;
 use grainx::rendering::{AdvancedCanvas, DashboardLayout};
 use grainx::theme::ThemePalette;
@@ -20,8 +20,6 @@ pub struct DashboardState {
     pub net_tx_points: Vec<(f64, f64)>,
     pub cpu_history: Vec<f64>,
     pub mem_history: Vec<f64>,
-    pub last_rx_bytes: u64,
-    pub last_tx_bytes: u64,
     pub iteration_count: i32,
     pub current_cpu_y_val: f64,
     pub current_mem_y_val: f64,
@@ -38,8 +36,6 @@ impl Default for DashboardState {
             net_tx_points: Vec::new(),
             cpu_history: Vec::new(),
             mem_history: Vec::new(),
-            last_rx_bytes: 0,
-            last_tx_bytes: 0,
             iteration_count: 0,
             current_cpu_y_val: 0.0,
             current_mem_y_val: 0.0,
@@ -198,20 +194,18 @@ pub async fn draw_dashboard(
     canvas.set_color(mem_color)?;
     canvas.draw_braille_line(&state.mem_points, &ctx.layout.mem_rect)?;
 
-    let rx_kbps = throughput_kbps(rx_bytes, state.last_rx_bytes);
-    let tx_kbps = throughput_kbps(tx_bytes, state.last_tx_bytes);
-    state.last_rx_bytes = rx_bytes;
-    state.last_tx_bytes = tx_bytes;
+    let rx_kb = sample_kibibytes(rx_bytes);
+    let tx_kb = sample_kibibytes(tx_bytes);
 
     canvas.set_cursor(0, ctx.layout.net_rect.y.saturating_sub(1))?;
     canvas.set_color(ctx.palette.label)?;
     canvas.draw_str(&format!(
-        "Network I/O: RX {rx_kbps:.1} KB/s  TX {tx_kbps:.1} KB/s"
+        "Network I/O: RX {rx_kb:.1} KB  TX {tx_kb:.1} KB (last interval)"
     ))?;
 
-    let max_net_kbps = (rx_kbps + tx_kbps).max(1.0);
-    let target_net_rx_y = (rx_kbps / max_net_kbps) * ctx.layout.net_rect.height as f64;
-    let target_net_tx_y = (tx_kbps / max_net_kbps) * ctx.layout.net_rect.height as f64;
+    let max_net_kb = (rx_kb + tx_kb).max(1.0);
+    let target_net_rx_y = (rx_kb / max_net_kb) * ctx.layout.net_rect.height as f64;
+    let target_net_tx_y = (tx_kb / max_net_kb) * ctx.layout.net_rect.height as f64;
     state.current_net_rx_y = state.current_net_rx_y * 0.8 + target_net_rx_y * 0.2;
     state.current_net_tx_y = state.current_net_tx_y * 0.8 + target_net_tx_y * 0.2;
 
