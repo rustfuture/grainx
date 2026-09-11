@@ -4,6 +4,9 @@ New capture pair showing the `Memory: ...` label in the final rendered frame, af
 fix in `42f4602` moved the label above the memory graph's clear/braille passes. It does not
 replace the older 2026-09-11 captures; those remain as historical material.
 
+> Merge note (2026-09-11): this capture and the layout fix were merged to `main` as `2067359879b9`
+> (PR #5). The fix is unchanged between `42f4602` and the merge.
+
 ## Build identity
 
 | Field | Value |
