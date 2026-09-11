@@ -6,6 +6,10 @@ thread). It covers the success path, two controlled-failure paths, and the exact
 `http://127.0.0.1:0` case that panicked before the fix. It is evidence for the listed build and
 host only, not a compatibility claim.
 
+> Merge note (2026-09-11): this change and its CLI tests were merged to `main` as `2067359879b9`
+> (PR #4). The runtime fix under test is unchanged between `3dfa107` and the merge; the additional
+> commits only add tests and documentation.
+
 ## Build identity
 
 | Field | Value |
