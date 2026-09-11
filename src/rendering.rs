@@ -68,6 +68,12 @@ impl DashboardLayout {
             footer_y,
         }
     }
+
+    /// Row for the memory label, kept just above `mem_rect` so the memory
+    /// graph's clear and braille passes can never overwrite it.
+    pub fn memory_label_y(&self) -> u16 {
+        self.mem_rect.y.saturating_sub(1)
+    }
 }
 
 pub struct AdvancedCanvas {

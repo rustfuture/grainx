@@ -157,7 +157,7 @@ pub async fn draw_dashboard(
     canvas.set_color(cpu_color)?;
     canvas.draw_braille_line(&state.cpu_points, &ctx.layout.cpu_rect)?;
 
-    canvas.set_cursor(0, ctx.layout.mem_rect.y)?;
+    canvas.set_cursor(0, ctx.layout.memory_label_y())?;
     canvas.set_color(ctx.palette.label)?;
     canvas.draw_str(&format!(
         "Memory: {:.1}% ({:.1}GB/{:.1}GB)",
