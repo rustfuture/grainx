@@ -90,7 +90,7 @@ pub async fn draw_dashboard(
         state.iteration_count
     ))?;
 
-    canvas.set_cursor(0, 2)?;
+    canvas.set_cursor(0, ctx.layout.cpu_label_y())?;
     canvas.set_color(ctx.palette.label)?;
     canvas.draw_str("CPU Usage:")?;
 
@@ -102,7 +102,7 @@ pub async fn draw_dashboard(
         ctx.palette.ok
     };
     canvas.set_color(cpu_color)?;
-    canvas.set_cursor(12, 2)?;
+    canvas.set_cursor(12, ctx.layout.cpu_label_y())?;
     canvas.draw_str(&format!("{cpu_usage:6.2}%"))?;
 
     state.cpu_history.push(cpu_usage as f64);
@@ -366,9 +366,10 @@ pub async fn draw_dashboard(
     canvas.set_cursor(0, ctx.layout.footer_y)?;
     canvas.set_color(ctx.palette.muted)?;
     canvas.draw_str(&format!(
-        "Config: {} | Controls: q=quit, h=help, p=pause, a=adaptive, s=export",
-        ctx.config.name
+        "Config: {} | Controls: q=quit, h=help, p=pause, a=adaptive, s=export | Frame: {}",
+        ctx.config.name, state.iteration_count
     ))?;
+    canvas.flush()?;
 
     Ok(())
 }
