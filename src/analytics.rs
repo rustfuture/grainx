@@ -281,17 +281,19 @@ mod tests {
 
     #[test]
     fn test_metric_formula_names_do_not_corrupt_each_other() {
-        let mut metrics = HashMap::new();
-        metrics.insert("cpu", 10.0);
-        metrics.insert("cpu_temp", 50.0);
-        metrics.insert("temp", 7.0);
+        // The map is rebuilt on every iteration because a fresh HashMap has its own
+        // RandomState, so this samples a different iteration order each time. That is the
+        // property the old substring-replacement implementation depended on.
+        for _ in 0..64 {
+            let mut metrics = HashMap::new();
+            metrics.insert("cpu", 10.0);
+            metrics.insert("cpu_temp", 50.0);
+            metrics.insert("temp", 7.0);
 
-        // "cpu" and "temp" must not rewrite the "cpu_temp" token, and the result
-        // must not depend on HashMap iteration order.
-        for _ in 0..32 {
             assert_eq!(
                 evaluate_metric_formula("cpu_temp - cpu - temp", &metrics),
-                Some(33.0)
+                Some(33.0),
+                "cpu/temp must not rewrite the cpu_temp token"
             );
         }
     }

@@ -154,7 +154,7 @@ Scope notes:
 
 - **Security**: The HTTP agent has no TLS, authentication, or rate limiting. It refuses any non-loopback bind address at runtime, and `src/agent.rs` tests that `0.0.0.0`, `::`, and ordinary interface addresses are rejected. Loopback does not isolate users or processes on the same host, and remote metrics access is out of scope for this version.
 - **Completeness**: Network and disk I/O are aggregates and do not currently drill down into per-socket or per-file statistics.
-- **OS Support**: CI tests Linux and macOS on stable Rust. Windows support is experimental and is not covered by the CI matrix.
+- **OS Support**: CI tests Linux and macOS on stable Rust. Windows is not verified and is not covered by the CI matrix.
 
 ## Verification
 

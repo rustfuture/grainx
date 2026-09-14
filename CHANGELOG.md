@@ -7,6 +7,23 @@ versions, not published artifacts, so the release below is the first one a reade
 
 ## [Unreleased]
 
+### Fixed
+
+- `--bind '[::1]'` was refused after the IPv6 parsing change. The bracketed form is the standard
+  socket-address spelling of an IPv6 host, so both `::1` and `[::1]` are accepted again.
+- `agent --help` did not mention the loopback restriction; the constraint is now in the option's help
+  text as well as in the runtime check.
+- The README called Windows "experimental" while the support matrix and TODO listed it as
+  "not verified". Both now say not verified.
+- The `docs/validation/2026-09-06-macos.md` record cites a revision that is not reachable from any ref
+  in this repository, so the record now carries a provenance note marking it historical rather than
+  independently reproducible.
+
+### Changed
+
+- `test_metric_formula_names_do_not_corrupt_each_other` rebuilds its map inside the loop, so the
+  iterations actually sample different `HashMap` iteration orders instead of re-reading one map.
+
 ## [0.1.0] - 2026-09-14
 
 ### Added
