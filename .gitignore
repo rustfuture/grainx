@@ -1,7 +1,7 @@
 # Rust
 target/
 
-# IDE / Cursor (local only — do not commit skills)
+# Local editor tooling (never committed)
 .cursor/skills/
 .agents/
 skills-lock.json

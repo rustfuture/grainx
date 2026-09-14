@@ -7,6 +7,12 @@ versions, not published artifacts, so the release below is the first one a reade
 
 ## [Unreleased]
 
+### Removed
+
+- `.cursor/hooks.json`, an editor hook that ran `cargo check --message-format=short` after every file
+  edit. It was local development tooling committed to the repository, and it duplicated a check that
+  CI already runs on every push.
+
 ## [0.1.1] - 2026-09-14
 
 ### Fixed
