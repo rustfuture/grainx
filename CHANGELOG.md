@@ -7,6 +7,12 @@ versions, not published artifacts, so the release below is the first one a reade
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-14
+
+### Changed
+
+- The crate and binary version now match the published release tag.
+
 ### Removed
 
 - `.cursor/hooks.json`, an editor hook that ran `cargo check --message-format=short` after every file
