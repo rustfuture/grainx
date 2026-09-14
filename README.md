@@ -47,7 +47,7 @@ The default command is monitor. In a headless environment, use the agent or expo
 # Interactive dashboard
 cargo run --locked -- monitor
 
-# Local HTTP metrics service; localhost is the default bind address
+# Local HTTP metrics service; the bind address must be loopback
 cargo run --locked -- agent --bind 127.0.0.1 --port 9090
 
 # Export one snapshot without starting the TUI
@@ -67,7 +67,7 @@ cargo run --locked -- monitor --remote http://127.0.0.1:9090
 cargo run --locked -- completions bash
 ~~~
 
-The agent exposes host metrics without authentication or TLS. Keep it on localhost unless you have added appropriate network controls and an authenticated transport around it.
+The agent exposes host metrics without authentication, TLS, or rate limiting, so it refuses to start on any address that is not loopback: `--bind 0.0.0.0` and a LAN address exit with an error instead of listening. That boundary is enforced in the program, not only in this document. Loopback is still not a complete protection — it does not separate users or processes on the same machine, and anything that can reach localhost can read the metrics. Remote metrics access is out of scope for this version; if you need it, put an authenticated transport in front of the agent.
 
 ## Configuration
 
@@ -145,14 +145,14 @@ Scope notes:
 ## Architecture
 
 - **Monitor (`SystemMonitor`)**: Gathers raw state using `sysinfo`.
-- **Analytics Engine (`analytics::*`)**: Performs formula evaluation and anomaly detection on the collected metrics.
-- **Agent Server (`agent::*`)**: Exposes collected metrics via an HTTP server using `axum`. By default, binds to `127.0.0.1:9090` without TLS or authentication (intended for local sidecar usage).
+- **Analytics Engine (`analytics::*`)**: Performs formula evaluation and anomaly detection on the collected metrics. `evaluate_metric_formula` substitutes whitespace-separated tokens and evaluates strictly left-to-right with no operator precedence; see its doc comment for the full contract.
+- **Agent Server (`agent::*`)**: Exposes collected metrics via an HTTP server using `axum`. Binds to `127.0.0.1:9090` by default and refuses any non-loopback address, because it serves without TLS or authentication.
 - **TUI Renderer (`ui::*`, `tui::*`)**: Renders the terminal dashboard using `crossterm`. Employs frame-skipping and adaptive refresh intervals to gracefully degrade under heavy load.
 
 
 ## Limitations
 
-- **Security**: The HTTP agent does not support TLS or authentication. Do not bind it to a public interface.
+- **Security**: The HTTP agent has no TLS, authentication, or rate limiting. It refuses any non-loopback bind address at runtime, and `src/agent.rs` tests that `0.0.0.0`, `::`, and ordinary interface addresses are rejected. Loopback does not isolate users or processes on the same host, and remote metrics access is out of scope for this version.
 - **Completeness**: Network and disk I/O are aggregates and do not currently drill down into per-socket or per-file statistics.
 - **OS Support**: CI tests Linux and macOS on stable Rust. Windows support is experimental and is not covered by the CI matrix.
 
@@ -170,9 +170,17 @@ cargo bench --locked --no-run
 
 The Criterion benchmarks can be executed locally with cargo bench. Their results depend on the machine, operating system, and toolchain, so this repository does not present a universal performance claim. See [docs/verification.md](docs/verification.md) for the verification contract and [docs/architecture.md](docs/architecture.md) for the module boundaries.
 
-## Compatibility
+## Compatibility and versioning
 
-grainx is built from cross-platform Rust crates. CI runs the full check suite on Linux and macOS with stable Rust, and a separate job compiles every target on the minimum supported Rust version. Windows support should be treated as a target to validate on the specific release being used, not as a claim of a tested compatibility matrix.
+grainx follows `0.x` semantics: the version number is a statement about scope, not a compatibility promise. While the major version is 0, a breaking change to the CLI, the configuration schema, or the exported JSON/CSV shape bumps the minor version, and a compatible fix bumps the patch version. Every change is recorded in [CHANGELOG.md](CHANGELOG.md).
+
+| Platform | Status |
+| --- | --- |
+| Linux | Verified by CI on stable Rust, plus an all-target compilation job on the minimum supported version. |
+| macOS | Verified by CI, and used for the recorded captures under [demos/](demos/). |
+| Windows | Not verified; the CI matrix does not cover it. |
+
+The minimum supported Rust version is 1.88; raising it is a minor-version change. A `1.0` would mean the command surface, the configuration schema, and the exported formats have stopped moving, not that every idea in [TODO.md](TODO.md) has been implemented.
 
 ## License
 

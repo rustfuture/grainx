@@ -9,6 +9,11 @@ pub enum GrainxError {
     #[error("invalid bind address: {0}")]
     InvalidBind(String),
 
+    #[error(
+        "refusing to bind the metrics agent to {0}: grainx serves host metrics without authentication or TLS, so the agent only accepts a loopback address such as 127.0.0.1 or ::1"
+    )]
+    NonLoopbackBind(String),
+
     #[error("failed to load config from {path}: {source}")]
     ConfigLoad {
         path: String,
@@ -31,6 +36,7 @@ impl GrainxError {
         match self {
             GrainxError::NoTty => 2,
             GrainxError::InvalidBind(_) => 2,
+            GrainxError::NonLoopbackBind(_) => 2,
             GrainxError::ConfigLoad { .. } => 3,
             GrainxError::RemoteMetrics(_) => 4,
             GrainxError::Export(_) => 5,

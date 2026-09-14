@@ -151,23 +151,26 @@ pub fn calculate_correlation(data1: &[f64], data2: &[f64]) -> Option<f64> {
 /// Evaluate a decimal arithmetic expression against named metrics.
 ///
 /// Contract:
-/// - Metric names are substituted textually with their decimal values.
+/// - A token that exactly matches a metric name is replaced by that metric's
+///   decimal value. Names are matched per whitespace-separated token, so a
+///   metric called `cpu` never rewrites the `cpu_temp` token.
 /// - Tokens are separated by ASCII whitespace and evaluated strictly
 ///   left-to-right with no operator precedence (`1 + 2 * 3` evaluates to `9`).
+/// - Operators must be surrounded by whitespace; `1+2` is not an expression.
 /// - Returns `None` for an empty expression, a non-numeric first token, an
 ///   unknown metric name, an operator without an operand, an unsupported
 ///   operator, or division by zero.
 pub fn evaluate_metric_formula(formula: &str, metrics: &HashMap<&str, f64>) -> Option<f64> {
-    // Very basic formula evaluation for prototype.
-    // Supports named metrics and the operators +, -, *, / (left to right).
-    let mut result = formula.to_string();
-
-    // Replace metric names with their values
-    for (name, value) in metrics {
-        result = result.replace(name, &value.to_string());
-    }
-
-    let parts: Vec<&str> = result.split_whitespace().collect();
+    // Substitute token by token. Replacing over the whole string would let one
+    // metric name corrupt another that contains it and would make the result
+    // depend on HashMap iteration order.
+    let parts: Vec<String> = formula
+        .split_whitespace()
+        .map(|token| match metrics.get(token) {
+            Some(value) => value.to_string(),
+            None => token.to_string(),
+        })
+        .collect();
     if parts.is_empty() {
         return None;
     }
@@ -176,7 +179,7 @@ pub fn evaluate_metric_formula(formula: &str, metrics: &HashMap<&str, f64>) -> O
 
     let mut i = 1;
     while i < parts.len() {
-        let operator = parts[i];
+        let operator = parts[i].as_str();
         // An operator must be followed by an operand.
         let operand = parts.get(i + 1)?.parse::<f64>().ok()?;
 
@@ -274,5 +277,33 @@ mod tests {
             evaluate_metric_formula("cpu_usage + 5", &metrics),
             Some(15.0)
         );
+    }
+
+    #[test]
+    fn test_metric_formula_names_do_not_corrupt_each_other() {
+        let mut metrics = HashMap::new();
+        metrics.insert("cpu", 10.0);
+        metrics.insert("cpu_temp", 50.0);
+        metrics.insert("temp", 7.0);
+
+        // "cpu" and "temp" must not rewrite the "cpu_temp" token, and the result
+        // must not depend on HashMap iteration order.
+        for _ in 0..32 {
+            assert_eq!(
+                evaluate_metric_formula("cpu_temp - cpu - temp", &metrics),
+                Some(33.0)
+            );
+        }
+    }
+
+    #[test]
+    fn test_metric_formula_operators_require_whitespace() {
+        let mut metrics = HashMap::new();
+        metrics.insert("cpu", 10.0);
+
+        // The contract requires whitespace around operators, so a run-together
+        // expression is rejected rather than guessed at.
+        assert_eq!(evaluate_metric_formula("cpu+2", &metrics), None);
+        assert_eq!(evaluate_metric_formula("cpu * 2", &metrics), Some(20.0));
     }
 }
