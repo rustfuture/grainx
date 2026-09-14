@@ -64,10 +64,14 @@ fn ensure_loopback(addr: SocketAddr) -> Result<()> {
 
 /// Build the socket address for `bind`, which must be an IP literal.
 ///
-/// Joining `"host:port"` as a string cannot represent IPv6: `::1` would become `::1:9090`,
-/// which does not parse. Taking an `IpAddr` first keeps both families working.
+/// Both `::1` and `[::1]` are accepted. An IPv6 host is bracketed in socket-address spelling, so a
+/// user who copies it out of `addr:port` must not be rejected for including the brackets.
 fn parse_bind(bind: &str, port: u16) -> Result<SocketAddr> {
-    let ip: IpAddr = bind
+    let host = bind
+        .strip_prefix('[')
+        .and_then(|rest| rest.strip_suffix(']'))
+        .unwrap_or(bind);
+    let ip: IpAddr = host
         .parse()
         .map_err(|_| GrainxError::InvalidBind(bind.to_string()))?;
     Ok(SocketAddr::new(ip, port))
@@ -149,10 +153,13 @@ mod tests {
     #[test]
     fn ipv6_bind_addresses_are_parsed_and_formatted_correctly() {
         // The bind argument is an IP literal, so the port must be attached with
-        // SocketAddr::new rather than by formatting "host:port".
-        let addr = parse_bind("::1", 9090).expect("::1 should parse");
-        assert_eq!(addr.to_string(), "[::1]:9090");
-        assert!(ensure_loopback(addr).is_ok());
+        // SocketAddr::new rather than by formatting "host:port". Both spellings of an
+        // IPv6 host are accepted, because the bracketed form is the socket-address one.
+        for spelling in ["::1", "[::1]"] {
+            let addr = parse_bind(spelling, 9090).expect("IPv6 loopback should parse");
+            assert_eq!(addr.to_string(), "[::1]:9090", "spelling: {spelling}");
+            assert!(ensure_loopback(addr).is_ok());
+        }
 
         assert!(matches!(
             parse_bind("localhost", 9090),
