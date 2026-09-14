@@ -18,7 +18,8 @@ pub enum Commands {
     Monitor(MonitorArgs),
     /// Run HTTP metrics agent (GET /health, GET /metrics)
     Agent {
-        /// Bind address
+        /// Bind address. Must be loopback (127.0.0.1, ::1, or [::1]); the agent refuses
+        /// anything routable because it serves host metrics without authentication or TLS
         #[arg(long, default_value = "127.0.0.1")]
         bind: String,
         /// Listen port
