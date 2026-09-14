@@ -7,8 +7,9 @@
 # os: macOS 26.6.2 (arm64)
 # cpu: Apple M4 Pro
 # command: cargo bench --locked
+# note: absolute checkout paths were replaced with /path/to/grainx before publication
 
-   Compiling grainx v0.1.0 (/Users/macintosh/Desktop/Müzik/grainx)
+   Compiling grainx v0.1.0 (/path/to/grainx)
     Finished `bench` profile [optimized] target(s) in 2.64s
      Running unittests src/lib.rs (target/release/deps/grainx-3ac48915eb018be0)
 

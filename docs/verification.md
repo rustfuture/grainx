@@ -24,6 +24,6 @@ Benchmark numbers are environment-dependent. Any published measurement should in
 
 ## CI scope
 
-GitHub Actions runs the local validation contract on Ubuntu with the stable Rust toolchain for pushes to main and pull requests targeting main. A separate job compiles every target with Rust 1.88.0 and the committed lockfile so the declared minimum does not silently drift. Windows and macOS are not currently part of the CI matrix.
+GitHub Actions runs the local validation contract on Ubuntu and macOS with the stable Rust toolchain for pushes to main and pull requests targeting main. A separate job compiles every target with Rust 1.88.0 and the committed lockfile so the declared minimum does not silently drift. Windows is not currently part of the CI matrix.
 
 `Cargo.lock` is committed because grainx is an application. The `--locked` checks fail instead of silently changing the resolved dependency graph, so a clean checkout and CI evaluate the same package versions.

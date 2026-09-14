@@ -104,10 +104,20 @@ Process termination is subject to the operating system permissions of the user r
 
 ## Demos
 
-See [demos/](demos/) for verified 2026-09-11 captures with build identity and reproduction commands:
-a pty TUI capture that shows the current `Network I/O: ... (last interval)` label, real
-`/health` + `/metrics` + local `export` output, and an honest record of the currently failing remote
-`export` path. The older 2026-09-06 captures are kept and marked historical.
+See [demos/](demos/) for verified captures with build identity, artifact hashes, a privacy review, and
+reproduction commands:
+
+- `tui_capture_2026-09-12-contract-80x24.*` and `-110x50.*` — the enforced bounded-capture contract at
+  two terminal sizes, showing the current `Network I/O: ... (last interval)` label.
+- `http_capture_2026-09-11.txt` — real `GET /health` and `GET /metrics` output plus a local `export`
+  run from the built binary.
+- `verification_2026-09-11-remote-export.md` — CLI-boundary verification of the remote-export fix:
+  exit 0 against a live `grainx agent`, and controlled non-zero errors for unreachable, malformed, and
+  `http://127.0.0.1:0` endpoints with no panic text.
+- `verification_2026-09-12-braille-termination.md` — PTY proof that braille rendering and frame
+  completion are bounded.
+
+The older 2026-09-06 captures are kept and marked historical.
 
 ~~~bash
 cargo build --locked
@@ -144,7 +154,7 @@ Scope notes:
 
 - **Security**: The HTTP agent does not support TLS or authentication. Do not bind it to a public interface.
 - **Completeness**: Network and disk I/O are aggregates and do not currently drill down into per-socket or per-file statistics.
-- **OS Support**: CI actively tests Linux. macOS works natively but is considered secondary. Windows support is experimental.
+- **OS Support**: CI tests Linux and macOS on stable Rust. Windows support is experimental and is not covered by the CI matrix.
 
 ## Verification
 
@@ -162,7 +172,7 @@ The Criterion benchmarks can be executed locally with cargo bench. Their results
 
 ## Compatibility
 
-grainx is built from cross-platform Rust crates, but the current CI matrix verifies Linux only. Windows and macOS support should be treated as targets to validate on the specific release being used, not as a claim of a tested compatibility matrix.
+grainx is built from cross-platform Rust crates. CI runs the full check suite on Linux and macOS with stable Rust, and a separate job compiles every target on the minimum supported Rust version. Windows support should be treated as a target to validate on the specific release being used, not as a claim of a tested compatibility matrix.
 
 ## License
 
