@@ -7,6 +7,8 @@ versions, not published artifacts, so the release below is the first one a reade
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-14
+
 ### Fixed
 
 - `--bind '[::1]'` was refused after the IPv6 parsing change. The bracketed form is the standard
