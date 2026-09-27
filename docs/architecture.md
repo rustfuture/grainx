@@ -33,5 +33,5 @@ The HTTP agent is a separate process path that exposes one health endpoint and o
 
 - The agent uses HTTP with no authentication, TLS, or rate limiting.
 - The formula evaluator is a prototype with whitespace-separated, left-to-right arithmetic; it is not a full expression language.
-- CI currently verifies Linux only. Cross-platform behavior still needs a release validation matrix.
+- CI verifies Linux and macOS. Windows is not covered by the CI matrix.
 - Process termination follows the permissions and platform behavior of the user running the process.
