@@ -1,17 +1,17 @@
 # Memory-label TUI capture — 2026-09-11
 
 New capture pair showing the `Memory: ...` label in the final rendered frame, after the
-fix in `42f4602` moved the label above the memory graph's clear/braille passes. It does not
+fix in `c5bfba9` moved the label above the memory graph's clear/braille passes. It does not
 replace the older 2026-09-11 captures; those remain as historical material.
 
-> Merge note (2026-09-11): this capture and the layout fix were merged to `main` as `2067359879b9`
-> (PR #5). The fix is unchanged between `42f4602` and the merge.
+> Merge note (2026-09-11): this capture and the layout fix were merged to `main` as `71a9bdf104d5`
+> (PR #5). The fix is unchanged between `c5bfba9` and the merge.
 
 ## Build identity
 
 | Field | Value |
 | --- | --- |
-| Commit | `42f460271a45907d4e571741de4e79642f9f9df8` |
+| Commit | `c5bfba973bb209576c4fa8385e75d329a2e268c4` |
 | Working tree at build time | clean (`git status --porcelain` = 0 paths) |
 | Build command | `cargo build --locked` |
 | Binary | `target/debug/grainx` |

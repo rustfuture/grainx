@@ -1,7 +1,7 @@
 # Braille termination verification - 2026-09-12
 
 This record covers the source and binary built from implementation commit
-`62690ca94ea1113eee538c5270123a3b25c5c7b9` on branch
+`11b7c0eb351736f59a54c5bba3e6f64a7332836c` on branch
 `fix/braille-termination`.
 
 ## Build identity
