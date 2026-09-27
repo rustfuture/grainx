@@ -1,25 +1,21 @@
 # grainx
 
+A terminal system monitor and local HTTP metrics service in Rust for developers and operators monitoring system resources and process activity.
+
 [![CI](https://github.com/rustfuture/grainx/actions/workflows/ci.yml/badge.svg)](https://github.com/rustfuture/grainx/actions/workflows/ci.yml)
-[![Rust](https://img.shields.io/badge/rust-1.88%2B-orange.svg?logo=rust)](https://www.rust-lang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A Rust terminal system monitor for CPU, memory, disks, network activity, processes, and host metadata.
-
-grainx is a pre-1.0 project. The repository documents the implemented behavior and the checks that run in CI; it does not publish unsupported runtime or benchmark numbers.
+**Status:** Experimental CLI tool (v0.1.2, pre-1.0) under active development; CI verifies builds and tests on Linux and macOS.
 
 ## What it does
 
-- Interactive terminal dashboard with Unicode/Braille charts.
-- Local system collection through sysinfo: CPU, memory, disks, network counters, processes, OS, kernel, and uptime.
-- Optional analytics: z-score anomaly detection, Pearson correlation, moving-average estimates, and a deliberately simple arithmetic formula evaluator.
-- Adaptive refresh and frame skipping when CPU load is high.
-- Optional HTTP metrics service with GET /health and GET /metrics.
-- JSON and CSV snapshots from local or remote metrics.
-- JSON configuration with environment-variable and CLI overrides.
-- Shell completion generation for Bash, Elvish, Fish, PowerShell, and Zsh.
+- Interactive terminal dashboard with Unicode/Braille CPU and memory charts, process inspection, and process termination.
+- Local host resource collection via `sysinfo`: CPU, memory, disk usage, per-interval network I/O, processes, and host metadata.
+- Adaptive refresh rate scaling and frame skipping under heavy system CPU load.
+- Local HTTP metrics service (`GET /health` and `GET /metrics`) restricted to loopback interfaces.
+- Local and remote JSON and CSV metric snapshot export without starting the TUI.
 
-The term agent in this repository means the HTTP metrics process. It is not an AI or LLM agent.
+The term *agent* in this repository refers to the HTTP metrics daemon process, not an AI or LLM agent.
 
 ## Quick start
 
@@ -96,10 +92,12 @@ Process termination is subject to the operating system permissions of the user r
 
 ## Metrics Semantics
 
-- **CPU Usage**: System-wide CPU utilization is calculated as the average utilization across all logical cores since the last refresh. The default refresh interval is 1 second (1000ms), which provides a balanced sampling window.
-- **Memory Usage**: Physical memory utilization reported by the operating system, excluding swap.
-- **Network I/O**: `network_rx_bytes` and `network_tx_bytes` are the bytes received and transmitted during the most recent sampling interval (a per-interval delta reported by `sysinfo`). They are not cumulative counters and are not rates. The TUI labels the same values as kilobytes for the last interval.
-- **Sampling Interval**: By default, the system monitor samples state every 1000ms. This is configurable via `GRAINX_REFRESH_INTERVAL_MS`. Adaptive refresh can increase this interval (slowing down the sampling rate) up to 2000ms when system CPU usage exceeds the configured warning threshold (default 80%).
+- **CPU Usage**: System-wide CPU utilization is calculated as the average utilization across all logical cores since the last refresh ([src/monitor.rs](src/monitor.rs)).
+- **Memory Usage**: Physical memory utilization reported by the operating system, excluding swap ([src/monitor.rs](src/monitor.rs)).
+- **Network I/O**: `network_rx_bytes` and `network_tx_bytes` are the bytes received and transmitted during the most recent sampling interval (a per-interval delta reported by `sysinfo`, not a cumulative counter or rate). The TUI displays this as `Network I/O: RX <n> KB  TX <n> KB (last interval)` ([src/ui.rs](src/ui.rs), [src/network.rs](src/network.rs)).
+- **Sampling Interval**: The default refresh interval is 500ms, configured in [dashboard_config.json](dashboard_config.json) and [src/config.rs](src/config.rs) (overrideable via `GRAINX_REFRESH_INTERVAL_MS` or `--refresh-interval-ms`).
+- **Adaptive Refresh & Frame Skipping**: When enabled, the monitor scales target refresh dynamically based on rolling average CPU load: 250ms (<=50%), 500ms (>50%), 1000ms (>70%), and 2000ms (>90%), taking `adaptive_refresh.max(base_refresh)` ([src/performance.rs](src/performance.rs), [src/tui.rs](src/tui.rs)). If CPU load exceeds 95%, the dashboard skips rendering frames ([src/performance.rs](src/performance.rs)).
+- **Warning Thresholds**: CPU warning threshold defaults to 80.0% and memory warning threshold defaults to 85.0% ([src/config.rs](src/config.rs)), driving alert highlights in the TUI ([src/ui.rs](src/ui.rs)) and high-load alerts ([src/monitor.rs](src/monitor.rs)).
 
 
 ## Demos
@@ -152,8 +150,10 @@ Scope notes:
 
 ## Limitations
 
-- **Security**: The HTTP agent has no TLS, authentication, or rate limiting. It refuses any non-loopback bind address at runtime, and `src/agent.rs` tests that `0.0.0.0`, `::`, and ordinary interface addresses are rejected. Loopback does not isolate users or processes on the same host, and remote metrics access is out of scope for this version.
-- **Completeness**: Network and disk I/O are aggregates and do not currently drill down into per-socket or per-file statistics.
+- **Security**: The HTTP agent has no TLS, authentication, or rate limiting. It refuses any non-loopback bind address at runtime, and `src/agent.rs` tests that `0.0.0.0`, `::`, and ordinary interface addresses are rejected. Loopback does not isolate users or processes on the same host; remote metrics access requires placing an authenticated transport in front of the agent.
+- **Completeness**: Network and disk I/O are aggregates and do not drill down into per-socket or per-file statistics.
+- **Formula Evaluator**: `evaluate_metric_formula` evaluates whitespace-separated tokens strictly left-to-right with no operator precedence or parentheses ([src/analytics.rs](src/analytics.rs)).
+- **Interactive TUI**: The `monitor` command requires an interactive terminal (TTY) and exits with an error in headless environments ([src/tui.rs](src/tui.rs)).
 - **OS Support**: CI tests Linux and macOS on stable Rust. Windows is not verified and is not covered by the CI matrix.
 
 ## Verification

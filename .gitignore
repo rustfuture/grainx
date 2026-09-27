@@ -28,5 +28,14 @@ Thumbs.db
 test_config.json
 grainx_stats.*
 
+# Python artifacts and virtualenvs
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.ipynb_checkpoints/
+
 # Temporary files
 tmp_*
+
