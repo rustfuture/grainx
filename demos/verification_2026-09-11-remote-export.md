@@ -1,21 +1,21 @@
 # grainx remote-export CLI verification — 2026-09-11
 
 This record proves the `grainx export --remote <url>` fix at the real CLI boundary on top of
-`main` commit `3dfa107` (the commit that moved the blocking `reqwest` client to a dedicated OS
+`main` commit `e9ce607` (the commit that moved the blocking `reqwest` client to a dedicated OS
 thread). It covers the success path, two controlled-failure paths, and the exact
 `http://127.0.0.1:0` case that panicked before the fix. It is evidence for the listed build and
 host only, not a compatibility claim.
 
-> Merge note: this change and its CLI tests were merged to `main` as `a86fe3af`
-> (PR #4). The separate memory-label TUI fix merged as `2067359879b9` (PR #5). The runtime fix
-> under test is unchanged between `3dfa107` and the merge; the additional commits only add tests
+> Merge note: this change and its CLI tests were merged to `main` as `4fdd4f14`
+> (PR #4). The separate memory-label TUI fix merged as `71a9bdf104d5` (PR #5). The runtime fix
+> under test is unchanged between `e9ce607` and the merge; the additional commits only add tests
 > and documentation.
 
 ## Build identity
 
 | Field | Value |
 | --- | --- |
-| Source commit | `3dfa107f78b94812c080eae3b577c7cd6035cfdd` (`fix: build blocking remote metrics client outside the async runtime`) |
+| Source commit | `e9ce607fb2207346b7dd5b9b98a24bd4fedfbb4c` (`fix: build blocking remote metrics client outside the async runtime`) |
 | Branch | `test/remote-export-cli` (branched from `origin/main` at the commit above) |
 | Worktree at `cargo build` | clean (`git status --porcelain` = 0 paths) |
 | Worktree at CLI capture | dirty count 1: untracked `tests/cli_remote_export.rs`; no changes under `src/` |
@@ -31,7 +31,7 @@ target, so freezing the binary removes ambiguity about which bytes produced the 
 
 ## Historical failure (not a current result)
 
-On 2026-09-11, at commit `5dde108`, the same CLI shape exited 101 with:
+On 2026-09-11, at commit `c269d43`, the same CLI shape exited 101 with:
 
 ~~~text
 thread 'main' (157332) panicked at .../tokio-1.53.1/src/runtime/blocking/shutdown.rs:51:21:

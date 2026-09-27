@@ -1,6 +1,6 @@
 # grainx Criterion results
 # date: 2026-09-10T20:33:41Z
-# base commit: 1aa311792261cfbfd7ea1cb5d07b8dff4ec512cb
+# base commit: 481dba6cb5b1ecbb2a37214c87eaa300bb41db53
 # code under test: base commit plus the P02 fixes in the commit that adds this file
 # rustc: rustc 1.94.1 (e408947bf 2026-03-25)
 # cargo: cargo 1.94.1 (29ea6fb6a 2026-03-24)

@@ -7,7 +7,7 @@ for the listed build and host only, not a performance or compatibility claim.
 
 | Field | Value |
 | --- | --- |
-| Commit | `5dde1082e5f8989793e79bd5130ec728dd0bde83` |
+| Commit | `c269d432620492b4c54d52397b6ec140b6c70da9` |
 | Working tree at build time | clean (`git status --porcelain` = 0 paths) |
 | Build command | `cargo build --locked` |
 | Binary | `target/debug/grainx` |
