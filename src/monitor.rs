@@ -151,7 +151,7 @@ impl SystemMonitor {
             self.high_cpu_duration += 1;
             if self.high_cpu_duration == 5 {
                 self.push_alert(
-                    "WARNING: Sustained high CPU usage detected! Potential CPU bottleneck.",
+                    "WARNING: Sustained high CPU usage detected. Potential CPU bottleneck.",
                 );
             }
         } else {
