@@ -9,9 +9,6 @@ build/
 *.exe
 
 # Local editor tooling
-.cursor/skills/
-.agents/
-skills-lock.json
 .vscode/
 .idea/
 *.swp

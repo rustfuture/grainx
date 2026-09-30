@@ -26,7 +26,7 @@ The default command opens the dashboard. See [usage and project details](docs/re
 
 ## Architecture
 
-The CLI starts the interactive dashboard by default, or runs the HTTP service, exports readings, or generates shell completions. The monitor collects system and process readings into a shared snapshot. The dashboard displays that snapshot, while remote dashboard and export commands fetch it from an agent. The agent serves health and metrics endpoints over HTTP and only binds to a loopback address. Export writes snapshots as JSON and CSV.
+The CLI starts the interactive dashboard by default, or runs the HTTP service, exports readings, or generates shell completions. The monitor collects system and process readings into a shared snapshot. The dashboard displays that snapshot, while the `--remote <url>` option of the dashboard and export commands fetches the snapshot from a running agent instead. The agent serves health and metrics endpoints over HTTP and only binds to a loopback address, so reaching it from another machine needs a tunnel or authenticated proxy that grainx does not provide. Export writes snapshots as JSON and CSV.
 
 ## Tests
 

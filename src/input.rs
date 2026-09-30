@@ -53,7 +53,7 @@ pub fn handle_input(
                         if backend.kill_process(*pid) {
                             canvas.set_cursor(0, layout.proc_start_y + 11)?;
                             canvas.set_color(palette.ok)?;
-                            canvas.draw_str(&format!("Process {name} killed successfully!"))?;
+                            canvas.draw_str(&format!("Process {name} killed."))?;
                         } else {
                             canvas.set_cursor(0, layout.proc_start_y + 11)?;
                             canvas.set_color(palette.critical)?;
@@ -102,9 +102,14 @@ pub fn handle_input(
                 KeyCode::Char('a') => {
                     if let Some(perf) = perf_monitor {
                         perf.toggle_adaptive_refresh();
+                        let state = if perf.get_performance_stats().2 {
+                            "on"
+                        } else {
+                            "off"
+                        };
                         canvas.set_cursor(0, 0)?;
                         canvas.set_color(palette.header)?;
-                        canvas.draw_str("Adaptive refresh toggled!")?;
+                        canvas.draw_str(&format!("Adaptive refresh {state}."))?;
                     }
                 }
                 _ => {}

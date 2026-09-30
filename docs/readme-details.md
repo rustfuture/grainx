@@ -15,21 +15,6 @@ The term *agent* in this repository refers to the HTTP metrics daemon process, n
 - To build an optimized binary, run `cargo build --locked --release`.
 - In a headless environment, use the agent or export command instead.
 
-## Architecture details
-
-- **Monitor (`SystemMonitor`)**: Gathers raw state using `sysinfo`.
-- **Analytics Engine (`analytics::*`)**: Performs formula evaluation and anomaly detection on the collected metrics. `evaluate_metric_formula` substitutes whitespace-separated tokens and evaluates strictly left-to-right with no operator precedence; see its doc comment for the full contract.
-- **Agent Server (`agent::*`)**: Exposes collected metrics via an HTTP server using `axum`. Binds to `127.0.0.1:9090` by default and refuses any non-loopback address, because it serves without TLS or authentication.
-- **TUI Renderer (`ui::*`, `tui::*`)**: Renders the terminal dashboard using `crossterm`. Employs frame-skipping and adaptive refresh intervals to gracefully degrade under heavy load.
-
-## Limitations details
-
-- **Security**: The HTTP agent has no TLS, authentication, or rate limiting. It refuses any non-loopback bind address at runtime, and `src/agent.rs` tests that `0.0.0.0`, `::`, and ordinary interface addresses are rejected. Loopback does not isolate users or processes on the same host; remote metrics access requires placing an authenticated transport in front of the agent.
-- **Completeness**: Network and disk I/O are aggregates and do not drill down into per-socket or per-file statistics.
-- **Formula Evaluator**: `evaluate_metric_formula` evaluates whitespace-separated tokens strictly left-to-right with no operator precedence or parentheses ([src/analytics.rs](../src/analytics.rs)).
-- **Interactive TUI**: The `monitor` command requires an interactive terminal (TTY) and exits with an error in headless environments ([src/tui.rs](../src/tui.rs)).
-- **OS Support**: CI tests Linux and macOS on stable Rust. Windows is not verified and is not covered by the CI matrix.
-
 ## Commands
 
 ~~~bash
@@ -56,7 +41,7 @@ cargo run --locked -- monitor --remote http://127.0.0.1:9090
 cargo run --locked -- completions bash
 ~~~
 
-The agent exposes host metrics without authentication, TLS, or rate limiting, so it refuses to start on any address that is not loopback: `--bind 0.0.0.0` and a LAN address exit with an error instead of listening. That boundary is enforced in the program, not only in this document. Loopback is still not a complete protection — it does not separate users or processes on the same machine, and anything that can reach localhost can read the metrics. Remote metrics access is out of scope for this version; if you need it, put an authenticated transport in front of the agent.
+The agent exposes host metrics without authentication, TLS, or rate limiting, so it refuses to start on any address that is not loopback: `--bind 0.0.0.0` and a LAN address exit with an error instead of listening. That boundary is enforced in the program, not only in this document. Loopback is still not a complete protection — it does not separate users or processes on the same machine, and anything that can reach localhost can read the metrics. Remote monitor mode (`monitor --remote <url>`) and remote export (`export --remote <url>`) fetch `GET /metrics` from a running agent by URL, so they work against an agent on the same host or one reached through a tunnel or authenticated proxy that you provide. grainx itself does not expose the agent to a network and adds no authentication or TLS. In remote monitor mode the dashboard shows the agent's snapshot; process termination does not act on the remote host.
 
 ## Configuration
 
