@@ -8,8 +8,10 @@ Set Theme "Catppuccin Mocha"
 Hide
 Type `export PS1='$ ' PATH="$PWD/target/release:$PATH"` Enter
 Type "clear" Enter
+Type "grainx --hide-processes" Enter
+Sleep 8s
 Show
-Type "grainx --hide-processes" Sleep 300ms Enter
 Sleep 25s
+Hide
 Type "q"
 Sleep 500ms
