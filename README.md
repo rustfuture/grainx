@@ -7,7 +7,8 @@ grainx shows live computer and process activity in a terminal and can share thos
 [![CI](https://github.com/rustfuture/grainx/actions/workflows/ci.yml/badge.svg)](https://github.com/rustfuture/grainx/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Status:** Experimental CLI tool (v0.1.2, pre-1.0); CI checks Linux and macOS.
+> [!NOTE]
+> **Status:** Experimental CLI tool (v0.1.2, pre-1.0); CI checks Linux and macOS.
 
 - Shows CPU, memory, disk, network, and process activity in an interactive dashboard.
 - Serves host readings through a local HTTP service.
