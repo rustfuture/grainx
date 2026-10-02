@@ -1,5 +1,7 @@
 # grainx
 
+![grainx project overview](docs/images/social-preview.png)
+
 grainx shows live computer and process activity in a terminal and can share those readings over a local web connection.
 
 [![CI](https://github.com/rustfuture/grainx/actions/workflows/ci.yml/badge.svg)](https://github.com/rustfuture/grainx/actions/workflows/ci.yml)
