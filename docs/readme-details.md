@@ -101,7 +101,7 @@ python3 -m venv /tmp/grainx-render-venv && /tmp/grainx-render-venv/bin/pip insta
 /tmp/grainx-render-venv/bin/python demos/capture_tui.py target/debug/grainx /tmp/tui.raw /tmp/tui.txt 5 110 50
 ~~~
 
-See [demos/README.md](demos/README.md) and [demos/verification_2026-09-11.md](../demos/verification_2026-09-11.md)
+See [demos/README.md](../demos/README.md) and [demos/verification_2026-09-11.md](../demos/verification_2026-09-11.md)
 for the full commands, hashes, privacy review, and limitations.
 
 ## Performance and Microbenchmarks
