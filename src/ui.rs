@@ -53,6 +53,7 @@ pub struct DrawContext<'a> {
     pub anomaly_detector: &'a AnomalyDetector,
     pub layout: &'a DashboardLayout,
     pub selected_process: usize,
+    pub hide_processes: bool,
     pub perf_monitor: &'a mut PerformanceMonitor,
 }
 
@@ -61,7 +62,8 @@ pub async fn draw_dashboard(
     state: &mut DashboardState,
     ctx: DrawContext<'_>,
 ) -> Result<()> {
-    canvas.set_cursor(0, 0)?;
+    canvas.begin_frame(ctx.layout.term_width, ctx.layout.term_height)?;
+    canvas.set_draw_height(ctx.layout.footer_y.saturating_sub(1));
 
     let metrics = ctx.backend.refresh()?;
     let cpu_usage = metrics.cpu_usage;
@@ -139,20 +141,11 @@ pub async fn draw_dashboard(
     let target_cpu_y = (cpu_usage as f64 / 100.0) * ctx.layout.cpu_rect.height as f64;
     state.current_cpu_y_val = state.current_cpu_y_val * 0.8 + target_cpu_y * 0.2;
 
-    state
-        .cpu_points
-        .push((state.iteration_count as f64, state.current_cpu_y_val));
-    if state.cpu_points.len() > ctx.layout.cpu_rect.width as usize {
-        state.cpu_points.remove(0);
-        for p in state.cpu_points.iter_mut() {
-            p.0 -= 1.0;
-        }
-    }
-
-    for y in ctx.layout.cpu_rect.y..(ctx.layout.cpu_rect.y + ctx.layout.cpu_rect.height) {
-        canvas.set_cursor(ctx.layout.cpu_rect.x, y)?;
-        canvas.draw_str(&" ".repeat(ctx.layout.cpu_rect.width as usize))?;
-    }
+    push_graph_sample(
+        &mut state.cpu_points,
+        state.current_cpu_y_val,
+        ctx.layout.cpu_rect.width,
+    );
 
     canvas.set_color(cpu_color)?;
     canvas.draw_braille_line(&state.cpu_points, &ctx.layout.cpu_rect)?;
@@ -169,20 +162,11 @@ pub async fn draw_dashboard(
     let target_mem_y = (memory_percentage / 100.0) * ctx.layout.mem_rect.height as f64;
     state.current_mem_y_val = state.current_mem_y_val * 0.8 + target_mem_y * 0.2;
 
-    state
-        .mem_points
-        .push((state.iteration_count as f64, state.current_mem_y_val));
-    if state.mem_points.len() > ctx.layout.mem_rect.width as usize {
-        state.mem_points.remove(0);
-        for p in state.mem_points.iter_mut() {
-            p.0 -= 1.0;
-        }
-    }
-
-    for y in ctx.layout.mem_rect.y..(ctx.layout.mem_rect.y + ctx.layout.mem_rect.height) {
-        canvas.set_cursor(ctx.layout.mem_rect.x, y)?;
-        canvas.draw_str(&" ".repeat(ctx.layout.mem_rect.width as usize))?;
-    }
+    push_graph_sample(
+        &mut state.mem_points,
+        state.current_mem_y_val,
+        ctx.layout.mem_rect.width,
+    );
 
     let mem_color = if memory_percentage > ctx.config.memory_warning_threshold as f64 {
         ctx.palette.critical
@@ -209,27 +193,16 @@ pub async fn draw_dashboard(
     state.current_net_rx_y = state.current_net_rx_y * 0.8 + target_net_rx_y * 0.2;
     state.current_net_tx_y = state.current_net_tx_y * 0.8 + target_net_tx_y * 0.2;
 
-    state
-        .net_rx_points
-        .push((state.iteration_count as f64, state.current_net_rx_y));
-    state
-        .net_tx_points
-        .push((state.iteration_count as f64, state.current_net_tx_y));
-    if state.net_rx_points.len() > ctx.layout.net_rect.width as usize {
-        state.net_rx_points.remove(0);
-        state.net_tx_points.remove(0);
-        for p in state.net_rx_points.iter_mut() {
-            p.0 -= 1.0;
-        }
-        for p in state.net_tx_points.iter_mut() {
-            p.0 -= 1.0;
-        }
-    }
-
-    for y in ctx.layout.net_rect.y..(ctx.layout.net_rect.y + ctx.layout.net_rect.height) {
-        canvas.set_cursor(ctx.layout.net_rect.x, y)?;
-        canvas.draw_str(&" ".repeat(ctx.layout.net_rect.width as usize))?;
-    }
+    push_graph_sample(
+        &mut state.net_rx_points,
+        state.current_net_rx_y,
+        ctx.layout.net_rect.width,
+    );
+    push_graph_sample(
+        &mut state.net_tx_points,
+        state.current_net_tx_y,
+        ctx.layout.net_rect.width,
+    );
 
     canvas.set_color(ctx.palette.accent)?;
     canvas.draw_braille_line(&state.net_rx_points, &ctx.layout.net_rect)?;
@@ -319,42 +292,45 @@ pub async fn draw_dashboard(
         }
     }
 
-    canvas.set_cursor(0, ctx.layout.proc_start_y)?;
-    canvas.set_color(ctx.palette.label)?;
-    canvas.draw_str("Top Processes (UP/DOWN to select, 'k' to kill, 'q' to quit):")?;
+    if !ctx.hide_processes {
+        canvas.set_cursor(0, ctx.layout.proc_start_y)?;
+        canvas.set_color(ctx.palette.label)?;
+        canvas.draw_str("Top Processes (UP/DOWN to select, 'k' to kill, 'q' to quit):")?;
 
-    for (i, (pid, name, cpu, memory)) in ctx
-        .processes
-        .iter()
-        .take(ctx.config.max_processes)
-        .enumerate()
-    {
-        let y_pos = ctx.layout.proc_start_y + 1 + i as u16;
-        canvas.set_cursor(0, y_pos)?;
+        for (i, (pid, name, cpu, memory)) in ctx
+            .processes
+            .iter()
+            .take(ctx.config.max_processes.min(ctx.layout.process_rows()))
+            .enumerate()
+        {
+            let y_pos = ctx.layout.proc_start_y + 1 + i as u16;
+            canvas.set_cursor(0, y_pos)?;
 
-        if i == ctx.selected_process {
-            canvas.set_color(ctx.palette.selection)?;
-            canvas.draw_str(&format!(
-                "> {:5} {:20} {:6.1}% {:8}KB",
-                pid,
-                name,
-                cpu,
-                memory / 1024
-            ))?;
-        } else {
-            canvas.set_color(ctx.palette.label)?;
-            canvas.draw_str(&format!(
-                "  {:5} {:20} {:6.1}% {:8}KB",
-                pid,
-                name,
-                cpu,
-                memory / 1024
-            ))?;
+            if i == ctx.selected_process {
+                canvas.set_color(ctx.palette.selection)?;
+                canvas.draw_str(&format!(
+                    "> {:5} {:20} {:6.1}% {:8}KB",
+                    pid,
+                    name,
+                    cpu,
+                    memory / 1024
+                ))?;
+            } else {
+                canvas.set_color(ctx.palette.label)?;
+                canvas.draw_str(&format!(
+                    "  {:5} {:20} {:6.1}% {:8}KB",
+                    pid,
+                    name,
+                    cpu,
+                    memory / 1024
+                ))?;
+            }
         }
     }
 
+    canvas.set_draw_height(ctx.layout.term_height);
     let (fps, frame_time, adaptive) = ctx.perf_monitor.get_performance_stats();
-    canvas.set_cursor(0, ctx.layout.footer_y - 1)?;
+    canvas.set_cursor(0, ctx.layout.footer_y.saturating_sub(1))?;
     canvas.set_color(ctx.palette.muted)?;
     canvas.draw_str(&format!(
         "Performance: {:.1}FPS | {:.1}ms | Adaptive: {}",
@@ -372,4 +348,35 @@ pub async fn draw_dashboard(
     canvas.flush()?;
 
     Ok(())
+}
+
+/// Keep history coordinates local to the viewport, including after a resize.
+fn push_graph_sample(points: &mut Vec<(f64, f64)>, value: f64, width: u16) {
+    points.push((0.0, value));
+    let excess = points.len().saturating_sub(width as usize);
+    points.drain(..excess);
+    for (x, point) in points.iter_mut().enumerate() {
+        point.0 = x as f64;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::push_graph_sample;
+
+    #[test]
+    fn scrolling_graph_history_stays_in_the_viewport() {
+        let mut points = Vec::new();
+        for sample in 0..100 {
+            push_graph_sample(&mut points, sample as f64, 4);
+        }
+        assert_eq!(
+            points,
+            vec![(0.0, 96.0), (1.0, 97.0), (2.0, 98.0), (3.0, 99.0)]
+        );
+        push_graph_sample(&mut points, 100.0, 2);
+        assert_eq!(points, vec![(0.0, 99.0), (1.0, 100.0)]);
+        push_graph_sample(&mut points, 101.0, 0);
+        assert!(points.is_empty());
+    }
 }

@@ -7,6 +7,9 @@ versions, not published artifacts, so the release below is the first one a reade
 
 ## [Unreleased]
 
+- Fix dashboard frame clearing, terminal bounds, footer overlap, and scrolling braille graph coordinates with values rising from bottom to top.
+- Add `--hide-processes` to omit the dashboard process table during screen sharing and recordings.
+
 ## [0.1.2] - 2026-09-14
 
 ### Changed

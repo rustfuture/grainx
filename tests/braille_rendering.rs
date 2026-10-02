@@ -74,17 +74,17 @@ fn rasterizer_worker() {
         "single" => {
             let grid = braille_grid(&[(1.0, 1.0)], 4, 2);
             assert_eq!(count_dots(&grid), 1);
-            assert!(grid[2][4]);
+            assert!(grid[2][3]);
 
             let edge = braille_grid(&[(3.9, 1.9)], 4, 2);
             assert_eq!(count_dots(&edge), 1);
-            assert!(edge[7][7], "edge-adjacent rounding must clamp in bounds");
+            assert!(edge[7][0], "edge-adjacent rounding must clamp in bounds");
 
             let boundary = braille_grid(&[(4.0, 2.0)], 4, 2);
             assert_eq!(count_dots(&boundary), 1);
             assert!(
-                boundary[7][7],
-                "inclusive right/bottom edge maps to last dot"
+                boundary[7][0],
+                "inclusive right/top edge maps to top-right dot"
             );
 
             for point in [(-1.0, 0.0), (4.1, 1.0), (1.0, 2.1)] {
@@ -95,19 +95,19 @@ fn rasterizer_worker() {
         "lines" => {
             let horizontal = braille_grid(&[(0.0, 1.0), (4.0, 1.0)], 4, 2);
             assert_eq!(count_dots(&horizontal), 8);
-            assert!(horizontal.iter().all(|column| column[4]));
+            assert!(horizontal.iter().all(|column| column[3]));
 
             let vertical = braille_grid(&[(0.0, 0.0), (0.0, 2.0)], 4, 2);
             assert_eq!(count_dots(&vertical), 8);
             assert!(vertical[0].iter().all(|dot| *dot));
 
             let fractional = braille_grid(&[(1.0, 0.10), (2.0, 0.15)], 4, 2);
-            assert!(fractional[2][0]);
-            assert!(fractional[4][1]);
+            assert!(fractional[2][7]);
+            assert!(fractional[4][6]);
 
             let repeated = braille_grid(&[(1.0, 1.0), (1.0, 1.0)], 4, 2);
             assert_eq!(count_dots(&repeated), 1);
-            assert!(repeated[2][4]);
+            assert!(repeated[2][3]);
 
             draw(&[(0.0, 1.0), (4.0, 1.0)], 4, 2);
             draw(&[(0.0, 0.0), (0.0, 2.0)], 4, 2);
@@ -124,7 +124,7 @@ fn rasterizer_worker() {
                 0
             );
             let crossing = braille_grid(&[(-4.0, -4.0), (8.0, 8.0)], 4, 2);
-            assert!(crossing[0][0]);
+            assert!(crossing[0][7]);
             assert!(count_dots(&crossing) > 1);
             draw(&[(-4.0, -4.0), (8.0, 8.0)], 4, 2);
         }
@@ -149,16 +149,16 @@ fn rasterizer_worker() {
         }
         "huge" => {
             let large = braille_grid(&[(0.0, 0.0), (1.0e18, 1.0e18)], 80, 20);
-            assert!(large[0][0]);
+            assert!(large[0][79]);
             assert!(count_dots(&large) > 1);
 
             let horizontal = braille_grid(&[(-f64::MAX, 1.0), (f64::MAX, 1.0)], 4, 2);
             assert_eq!(count_dots(&horizontal), 8);
-            assert!(horizontal.iter().all(|column| column[4]));
+            assert!(horizontal.iter().all(|column| column[3]));
 
             let diagonal = braille_grid(&[(-f64::MAX, -f64::MAX), (f64::MAX, f64::MAX)], 4, 2);
-            assert!(diagonal[0][0]);
-            assert!(diagonal[4][7]);
+            assert!(diagonal[0][7]);
+            assert!(diagonal[4][0]);
             assert!(count_dots(&diagonal) > 1);
 
             draw(&[(-f64::MAX, 1.0), (f64::MAX, 1.0)], 4, 2);

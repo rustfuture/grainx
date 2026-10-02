@@ -10,6 +10,8 @@ grainx shows live computer and process activity in a terminal and can share thos
 > [!NOTE]
 > **Status:** Experimental CLI tool (v0.1.2, pre-1.0); CI checks Linux and macOS.
 
+![The grainx dashboard with the process table hidden](docs/demo/dashboard.gif)
+
 - Shows CPU, memory, disk, network, and process activity in an interactive dashboard.
 - Serves host readings through a local HTTP service.
 - Saves local or remote readings as JSON and CSV files.
@@ -23,6 +25,12 @@ You need Git and stable Rust 1.88 or newer with Cargo ([rustup](https://rustup.r
 git clone https://github.com/rustfuture/grainx.git
 cd grainx
 cargo run --locked
+~~~
+
+Hide the process table when screen sharing or recording with `--hide-processes`:
+
+~~~bash
+cargo run --locked -- --hide-processes
 ~~~
 
 The default command opens the dashboard; press `q` to quit. For a first check without an interactive terminal, export local readings instead:

@@ -10,6 +10,9 @@ use clap_complete::Shell;
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
+    /// Hide the dashboard process table for screen sharing and recordings
+    #[arg(long, global = true)]
+    pub hide_processes: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -61,6 +64,9 @@ impl From<ShellArg> for Shell {
 
 #[derive(Args, Debug, Clone)]
 pub struct MonitorArgs {
+    /// Whether the dashboard process table is hidden
+    #[arg(skip)]
+    pub hide_processes: bool,
     /// Remote agent base URL (e.g. http://host:9090)
     #[arg(long)]
     pub remote: Option<String>,
@@ -96,14 +102,19 @@ pub struct ExportArgs {
 
 impl Cli {
     pub fn resolved_command(self) -> Commands {
-        self.command.unwrap_or(Commands::Monitor(MonitorArgs {
+        let mut command = self.command.unwrap_or(Commands::Monitor(MonitorArgs {
+            hide_processes: false,
             remote: None,
             config: "dashboard_config.json".to_string(),
             refresh_interval_ms: None,
             cpu_warning_threshold: None,
             memory_warning_threshold: None,
             color_theme: None,
-        }))
+        }));
+        if let Commands::Monitor(args) = &mut command {
+            args.hide_processes = self.hide_processes;
+        }
+        command
     }
 }
 
@@ -120,6 +131,23 @@ mod tests {
                 assert!(args.remote.is_none());
                 assert_eq!(args.config, "dashboard_config.json");
             }
+            _ => panic!("expected monitor command"),
+        }
+    }
+
+    #[test]
+    fn hide_processes_works_for_default_and_explicit_dashboard() {
+        for argv in [
+            vec!["grainx", "--hide-processes"],
+            vec!["grainx", "monitor", "--hide-processes"],
+        ] {
+            match Cli::parse_from(argv).resolved_command() {
+                Commands::Monitor(args) => assert!(args.hide_processes),
+                _ => panic!("expected monitor command"),
+            }
+        }
+        match Cli::parse_from(["grainx"]).resolved_command() {
+            Commands::Monitor(args) => assert!(!args.hide_processes),
             _ => panic!("expected monitor command"),
         }
     }

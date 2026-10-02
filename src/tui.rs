@@ -20,7 +20,12 @@ pub async fn run(args: MonitorArgs) -> Result<()> {
         return Err(GrainxError::NoTty);
     }
 
-    execute!(io::stdout(), terminal::EnterAlternateScreen, cursor::Hide)?;
+    execute!(
+        io::stdout(),
+        terminal::EnterAlternateScreen,
+        terminal::DisableLineWrap,
+        cursor::Hide
+    )?;
     terminal::enable_raw_mode()?;
 
     let shutdown = Arc::new(AtomicBool::new(false));
@@ -36,6 +41,7 @@ pub async fn run(args: MonitorArgs) -> Result<()> {
     terminal::disable_raw_mode()?;
     execute!(
         io::stdout(),
+        terminal::EnableLineWrap,
         terminal::LeaveAlternateScreen,
         cursor::Show,
         ResetColor
@@ -73,7 +79,11 @@ async fn run_loop(args: MonitorArgs, shutdown: Arc<AtomicBool>) -> Result<()> {
     while !shutdown.load(Ordering::SeqCst) {
         perf_monitor.start_frame();
 
-        let processes = backend.get_processes()?;
+        let processes = if args.hide_processes {
+            Vec::new()
+        } else {
+            backend.get_processes()?
+        };
         let current_cpu = backend.last_cpu_usage();
 
         if perf_monitor.should_skip_frame(current_cpu) {
@@ -108,6 +118,7 @@ async fn run_loop(args: MonitorArgs, shutdown: Arc<AtomicBool>) -> Result<()> {
                 anomaly_detector: &anomaly_detector,
                 layout: &layout,
                 selected_process,
+                hide_processes: args.hide_processes,
                 perf_monitor: &mut perf_monitor,
             },
         )
