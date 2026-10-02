@@ -14,7 +14,7 @@ grainx shows live computer and process activity in a terminal and can share thos
 
 ## Quick start
 
-Requires stable Rust 1.88 or newer and an interactive terminal for the dashboard. The crate uses Rust edition 2024; the minimum version is checked against the committed dependency lockfile.
+You need Git and stable Rust 1.88 or newer with Cargo ([rustup](https://rustup.rs/)), plus an interactive terminal for the dashboard. The first build downloads Cargo dependencies. The crate uses Rust edition 2024; the minimum version is checked against the committed dependency lockfile.
 
 ~~~bash
 git clone https://github.com/rustfuture/grainx.git
@@ -22,7 +22,15 @@ cd grainx
 cargo run --locked
 ~~~
 
-The default command opens the dashboard. See [usage and project details](docs/readme-details.md) for configuration, commands, controls, metric definitions, demos, benchmarks, and compatibility notes.
+The default command opens the dashboard; press `q` to quit. For a first check without an interactive terminal, export local readings instead:
+
+~~~bash
+cargo run --locked -- export --json /tmp/grainx-stats.json --csv /tmp/grainx-stats.csv
+~~~
+
+The command prints the two output paths. Open the JSON or CSV file to inspect the readings; no HTTP agent or external service is needed. On Windows, choose local output paths instead of `/tmp/...`; Windows is not covered by CI.
+
+See [usage and project details](docs/readme-details.md) for configuration, commands, controls, metric definitions, demos, benchmarks, and compatibility notes.
 
 ## Architecture
 
