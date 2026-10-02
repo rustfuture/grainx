@@ -1,6 +1,7 @@
 use crossterm::{
-    cursor, execute,
-    style::{Color, SetForegroundColor},
+    cursor, queue,
+    style::{Color, ResetColor, SetForegroundColor},
+    terminal::{Clear, ClearType},
 };
 use std::io::{self, Write};
 
@@ -14,7 +15,6 @@ pub struct Rect {
 /// Dynamic dashboard layout computed from terminal dimensions
 pub struct DashboardLayout {
     pub term_width: u16,
-    #[allow(dead_code)]
     pub term_height: u16,
     pub cpu_rect: Rect,
     pub mem_rect: Rect,
@@ -26,14 +26,20 @@ pub struct DashboardLayout {
 
 impl DashboardLayout {
     pub fn from_terminal_size(width: u16, height: u16) -> Self {
-        let term_width = width.max(60); // Minimum reasonable width
-        let term_height = height.max(20); // Minimum reasonable height
+        let term_width = width;
+        let term_height = height;
 
-        // Proportional layout: CPU graph takes ~35%, Memory ~15%, info ~15%, processes ~35%
-        let cpu_h = ((term_height as f32 * 0.35) as u16).max(8);
-        let mem_h = ((term_height as f32 * 0.15) as u16).max(4);
-        let net_h: u16 = 3;
-        let info_section_h: u16 = 4;
+        // Reserve labels, five information rows, process rows and two footer rows.
+        // Small terminals lose graph/process rows instead of drawing off-screen.
+        let desired_cpu = ((height as u32 * 35 / 100) as u16).max(8);
+        let desired_mem = ((height as u32 * 15 / 100) as u16).max(4);
+        let graph_rows = (desired_cpu + desired_mem + 3).min(height.saturating_sub(18));
+        let net_h = (graph_rows / 4).min(3);
+        let remaining = graph_rows - net_h;
+        let cpu_h = (remaining as u32 * desired_cpu as u32
+            / (desired_cpu as u32 + desired_mem as u32)) as u16;
+        let mem_h = remaining - cpu_h;
+        let info_section_h: u16 = 5;
 
         let cpu_rect = Rect {
             x: 0,
@@ -71,6 +77,12 @@ impl DashboardLayout {
         }
     }
 
+    /// Number of process entries that fit before the performance/footer rows.
+    pub fn process_rows(&self) -> usize {
+        self.footer_y
+            .saturating_sub(self.proc_start_y.saturating_add(2)) as usize
+    }
+
     /// Row for the CPU label, kept just above `cpu_rect` so the CPU graph's
     /// clear and braille passes can never overwrite it.
     pub fn cpu_label_y(&self) -> u16 {
@@ -89,13 +101,14 @@ impl DashboardLayout {
 /// `points` use the same coordinates as [`AdvancedCanvas::draw_braille_line`]:
 /// x and y are scaled to `cell_width`/`cell_height` terminal cells. The result
 /// is indexed `[gx][gy]` and sized `cell_width * 2` by `cell_height * 4`, the
-/// number of braille dots per cell.
+/// number of braille dots per cell. Logical y = 0 is the bottom row and
+/// y = `cell_height` is the top row.
 ///
 /// Every finite segment is clipped before its endpoints are quantized, so the
 /// amount of work is bounded by the viewport no matter how large the inputs
 /// are. Non-finite segments are skipped. A single finite point in the inclusive
-/// logical viewport is rounded to the nearest dot, with the right and bottom
-/// edges clamped to the final dot cell; points outside are skipped.
+/// logical viewport is rounded to the nearest dot and clamped to the edge
+/// dot cells; points outside are skipped.
 pub fn braille_grid(points: &[(f64, f64)], cell_width: u16, cell_height: u16) -> Vec<Vec<bool>> {
     let grid_width = cell_width as usize * 2;
     let grid_height = cell_height as usize * 4;
@@ -151,8 +164,9 @@ fn point_cell(
 
 fn quantize_point(point: (f64, f64), grid_width: usize, grid_height: usize) -> (usize, usize) {
     let gx = (point.0 * 2.0).round() as usize;
-    let gy = (point.1 * 4.0).round() as usize;
-    (gx.min(grid_width - 1), gy.min(grid_height - 1))
+    // Logical values rise from zero; terminal grid rows run from top to bottom.
+    let gy = grid_height - 1 - ((point.1 * 4.0).round() as usize).min(grid_height - 1);
+    (gx.min(grid_width - 1), gy)
 }
 
 /// Clip a segment to the logical canvas and return quantized endpoint cells.
@@ -308,8 +322,20 @@ fn plot_segment(grid: &mut [Vec<bool>], x1: usize, y1: usize, x2: usize, y2: usi
     }
 }
 
+/// Clip printable text to a row; control characters cannot move the cursor.
+fn clipped_text(text: &str, columns: u16) -> String {
+    text.chars()
+        .filter(|c| !c.is_control())
+        .take(columns as usize)
+        .collect()
+}
+
 pub struct AdvancedCanvas {
     stdout: io::Stdout,
+    output: Vec<u8>,
+    buffering: bool,
+    bounds: Option<(u16, u16)>,
+    position: (u16, u16),
 }
 
 impl Default for AdvancedCanvas {
@@ -322,26 +348,73 @@ impl AdvancedCanvas {
     pub fn new() -> Self {
         AdvancedCanvas {
             stdout: io::stdout(),
+            output: Vec::new(),
+            buffering: false,
+            bounds: None,
+            position: (0, 0),
+        }
+    }
+
+    /// Build a complete replacement frame before writing it to the terminal.
+    pub fn begin_frame(&mut self, width: u16, height: u16) -> io::Result<()> {
+        self.output.clear();
+        self.buffering = true;
+        self.bounds = Some((width, height));
+        self.position = (0, 0);
+        queue!(self.output, ResetColor, Clear(ClearType::All))
+    }
+
+    pub fn set_draw_height(&mut self, height: u16) {
+        if let Some((_, bound_height)) = &mut self.bounds {
+            *bound_height = height;
         }
     }
 
     pub fn set_cursor(&mut self, x: u16, y: u16) -> io::Result<()> {
-        execute!(self.stdout, cursor::MoveTo(x, y))
+        self.position = (x, y);
+        if self.bounds.is_none_or(|(w, h)| x < w && y < h) {
+            queue!(self.output, cursor::MoveTo(x, y))?;
+        }
+        self.flush_if_unbuffered()
     }
 
     pub fn set_color(&mut self, color: Color) -> io::Result<()> {
-        execute!(self.stdout, SetForegroundColor(color))
+        queue!(self.output, SetForegroundColor(color))?;
+        self.flush_if_unbuffered()
     }
 
     pub fn draw_str(&mut self, s: &str) -> io::Result<()> {
-        self.stdout.write_all(s.as_bytes())
+        if let Some((width, height)) = self.bounds {
+            let (x, y) = self.position;
+            if x >= width || y >= height {
+                return Ok(());
+            }
+            let text = clipped_text(s, width - x);
+            self.position.0 += text.chars().count() as u16;
+            self.output.write_all(text.as_bytes())?;
+        } else {
+            self.output.write_all(s.as_bytes())?;
+        }
+        self.flush_if_unbuffered()
+    }
+
+    fn flush_if_unbuffered(&mut self) -> io::Result<()> {
+        if !self.buffering {
+            self.flush()?;
+        }
+        Ok(())
     }
 
     pub fn flush(&mut self) -> io::Result<()> {
-        self.stdout.flush()
+        self.stdout.write_all(&self.output)?;
+        self.stdout.flush()?;
+        self.output.clear();
+        self.buffering = false;
+        Ok(())
     }
 
-    /// Draw a braille-based graph line for high-resolution
+    /// Draw occupied braille cells, preserving other lines in the same graph.
+    /// The caller clears the frame before drawing its graph layers.
     pub fn draw_braille_line(&mut self, points: &[(f64, f64)], rect: &Rect) -> io::Result<()> {
         let grid = braille_grid(points, rect.width, rect.height);
 
@@ -387,6 +460,9 @@ impl AdvancedCanvas {
                     braille_value |= 0x80;
                 }
 
+                if braille_value == 0 {
+                    continue;
+                }
                 let braille_char = std::char::from_u32(0x2800 + braille_value).unwrap_or('?');
                 self.set_cursor(rect.x + x, rect.y + y)?;
                 self.draw_str(&braille_char.to_string())?;
@@ -402,14 +478,77 @@ mod tests {
     use super::*;
 
     #[test]
-    fn layout_enforces_minimum_terminal_size() {
+    fn graph_values_rise_from_bottom_to_top() {
+        let low = braille_grid(&[(1.0, 0.08)], 4, 2);
+        let high = braille_grid(&[(1.0, 1.92)], 4, 2);
+        assert!(low[2][7], "low values belong in the bottom grid row");
+        assert!(high[2][0], "high values belong in the top grid row");
+        assert_eq!(quantize_point((1.0, 0.0), 8, 8), (2, 7));
+        assert_eq!(quantize_point((1.0, 2.0), 8, 8), (2, 0));
+    }
+
+    #[test]
+    fn layout_uses_actual_terminal_size() {
         let layout = DashboardLayout::from_terminal_size(20, 10);
-        assert!(layout.term_width >= 60);
-        assert!(layout.term_height >= 20);
-        assert!(layout.cpu_rect.height >= 8);
-        assert!(layout.mem_rect.height >= 4);
-        assert!(layout.net_rect.height >= 3);
-        assert!(layout.footer_y >= 19);
+        assert_eq!(layout.term_width, 20);
+        assert_eq!(layout.term_height, 10);
+        assert_eq!(layout.footer_y, 9);
+    }
+
+    #[test]
+    fn rows_are_clipped_and_control_characters_cannot_scroll() {
+        assert_eq!(clipped_text("182880KB%        0KB", 8), "182880KB");
+        assert_eq!(clipped_text("abc\n\r\tdef", 4), "abcd");
+        assert_eq!(clipped_text("⠿↔x", 2), "⠿↔");
+        assert_eq!(clipped_text("text", 0), "");
+    }
+
+    #[test]
+    fn frame_starts_by_erasing_previous_rows() {
+        let mut canvas = AdvancedCanvas::new();
+        canvas.begin_frame(20, 10).unwrap();
+        let clear = canvas.output.clone();
+        canvas.set_cursor(0, 2).unwrap();
+        canvas.draw_str("long process row").unwrap();
+        canvas.begin_frame(20, 10).unwrap();
+        assert_eq!(canvas.output, clear);
+        assert!(String::from_utf8(clear).unwrap().contains("\x1b[2J"));
+        let before = canvas.output.clone();
+        canvas.set_cursor(0, 10).unwrap();
+        canvas.draw_str("off-screen").unwrap();
+        assert_eq!(canvas.output, before);
+    }
+
+    #[test]
+    fn empty_graph_cells_do_not_erase_other_graph_layers() {
+        let mut canvas = AdvancedCanvas::new();
+        canvas.begin_frame(4, 2).unwrap();
+        let rect = Rect {
+            x: 0,
+            y: 0,
+            width: 4,
+            height: 2,
+        };
+        canvas
+            .draw_braille_line(&[(0.0, 0.0), (4.0, 0.0)], &rect)
+            .unwrap();
+        let first_layer = canvas.output.clone();
+        canvas.draw_braille_line(&[], &rect).unwrap();
+        assert_eq!(canvas.output, first_layer);
+        assert!(!String::from_utf8(first_layer).unwrap().contains('⠀'));
+    }
+
+    #[test]
+    fn processes_and_information_do_not_overlap_the_footer() {
+        for height in [18, 20, 24, 32, 40, 60, 100] {
+            let layout = DashboardLayout::from_terminal_size(80, height);
+            assert!(layout.network_start_y + 4 < layout.proc_start_y);
+            assert!(layout.proc_start_y < layout.footer_y - 1);
+            for index in 0..layout.process_rows() {
+                assert!(layout.proc_start_y + 1 + (index as u16) < layout.footer_y - 1);
+            }
+        }
+        assert_eq!(DashboardLayout::from_terminal_size(20, 5).process_rows(), 0);
     }
 
     #[test]
