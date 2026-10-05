@@ -8,7 +8,7 @@ grainx shows live computer and process activity in a terminal and can share thos
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 > [!NOTE]
-> **Status:** Experimental CLI tool (v0.1.2, pre-1.0); CI checks Linux and macOS.
+> **Status:** Experimental CLI tool (v0.1.3, pre-1.0); CI checks Linux and macOS.
 
 ![The grainx dashboard with the process table hidden](docs/demo/dashboard.gif)
 
@@ -18,6 +18,22 @@ grainx shows live computer and process activity in a terminal and can share thos
 - Adjusts dashboard refresh and rendering under high system load.
 
 ## Quick start
+
+### Try the released CLI (macOS or Linux)
+
+The prebuilt CLI does not require Rust. The installer downloads a release, checks its SHA-256 checksum, and installs to `~/.local/bin`:
+
+~~~bash
+curl -fsSL https://raw.githubusercontent.com/rustfuture/grainx/main/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+grainx --version
+grainx            # dashboard; press q to quit
+grainx export --json /tmp/grainx-stats.json --csv /tmp/grainx-stats.csv
+~~~
+
+Prebuilt Linux binaries require glibc; unsupported platforms can build from source. On Windows, use the [PowerShell installer](install.ps1).
+
+### Build from source
 
 You need Git and stable Rust 1.88 or newer with Cargo ([rustup](https://rustup.rs/)), plus an interactive terminal for the dashboard. The first build downloads Cargo dependencies. The crate uses Rust edition 2024; the minimum version is checked against the committed dependency lockfile.
 
