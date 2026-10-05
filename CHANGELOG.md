@@ -7,6 +7,9 @@ versions, not published artifacts, so the release below is the first one a reade
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-10-05
+
+- Prebuilt binaries for Linux (x86_64, aarch64), macOS (Intel, Apple Silicon) and Windows on each release, with SHA-256 files, plus `install.sh` and `install.ps1` installers.
 - Fix dashboard frame clearing, terminal bounds, footer overlap, and scrolling braille graph coordinates with values rising from bottom to top.
 - Add `--hide-processes` to omit the dashboard process table during screen sharing and recordings.
 
